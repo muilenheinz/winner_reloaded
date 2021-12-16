@@ -13,9 +13,6 @@ path = '../../data/PV/APS_PV/'
 weatherStationId = "00853" # wheatherstationId Chemnitz
 # weatherStationId = "02444" # wheatherstationID Jena Sternwarte
 
-# order of the np array:
-# (timestamp), measurement, time, dayOfWeek, isWeekend, weekNumber, isHoliday (Feiertag), isSchoolHoliday, LongwaveRadiation
-
 # returns a np.array of all data given in the csv files in the directory indicated by path parameter
 # @path directory in which the csv files are placed
 def loadData(path):
@@ -170,11 +167,18 @@ def addIsSchoolHolidayInformation(data: np.array):
             line[7] = isHoliday
     return data
 
-def downloadDWDWeatherData(_year):
+# downloads weatherdata from the dwd
+# @_type: "solar" or "precipitation"
+def downloadDWDWeatherData(_year, _type):
     global weatherStationId
-    url = "https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/10_minutes/solar/historical/"
-    foldername = "10minutenwerte_SOLAR_{weatherstation_id}_{year}0101_{year}1231_hist.zip".format(weatherstation_id = weatherStationId, year = _year)
-    weatherdata = downloadAndUnzipContent(url + foldername)
+    if _type == "solar":
+        url = "https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/10_minutes/solar/historical/"
+        foldername = "10minutenwerte_SOLAR_{weatherstation_id}_{year}0101_{year}1231_hist.zip".format(weatherstation_id = weatherStationId, year = _year)
+        weatherdata = downloadAndUnzipContent(url + foldername)
+    else:
+        url = "https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/10_minutes/precipitation/historical/"
+        foldername = "10minutenwerte_nieder_{weatherstation_id}_{year}0101_{year}1231_hist.zip".format(weatherstation_id = weatherStationId, year = _year)
+        weatherdata = downloadAndUnzipContent(url + foldername)
 
     return weatherdata
 
@@ -200,7 +204,14 @@ def downloadAndUnzipContent(_url):
 # adds weatherdata given from the dwd to the given array, currently only the LongwaveRadiation
 def addWeatherdata(data: np.array):
     year = None
-    data = addNewColToNpArray(data)
+    data = addNewColToNpArray(data) # DS_10; diffuse Himmelstrahlung 10min
+    data = addNewColToNpArray(data) # GS_10; Globalstrahlung 10min
+    data = addNewColToNpArray(data) # SD_10; Sonnenscheindauer 10min
+    data = addNewColToNpArray(data) # LS_10; Langwellige Strahlung 10min
+
+    data = addNewColToNpArray(data) # RWS_DAU_10; Niederschlagsdauer 10min
+    data = addNewColToNpArray(data) # RWS_10; Summe der Niederschlagsh. der vorangeg.10Min
+    data = addNewColToNpArray(data) # RWS_IND_10; Niederschlagsindikator  10min
 
     for line in data:
         timestamp = float(line[0])
@@ -210,8 +221,8 @@ def addWeatherdata(data: np.array):
         # when the year changes against the last loop, load new weatherdata
         if lineYear != year:
             year = lineYear
-            print(line)
-            weatherdata = downloadDWDWeatherData(year)
+            solarWeatherdata = downloadDWDWeatherData(year, "solar")
+            precipitationWeatherdata = downloadDWDWeatherData(year, "precipitation")
 
         # get the date for the weather by rounding the current minute to the next 10-minute, since weatherdata are
         # given in 10-minute steps
@@ -220,13 +231,44 @@ def addWeatherdata(data: np.array):
         roundedMinute = currentMinute - remainder
         roundedDate = str(datetimeValue.strftime("%Y%m%d%H")) + ("0" + str(int(roundedMinute)))[-2:]
 
-        # get the weather for the current situation
-        # GS_10 = globalstrahlung joule, sd_10 = sonnenscheindauer, Ls_10 = Langwellige Strahlung; jeweils 10 Minuten
-        LongwaveRadiation = weatherdata[roundedDate][5]
-        if LongwaveRadiation != -999:
-            line[8] = LongwaveRadiation
+        # get the weatherdata for the current situation
+        setSolarDataToRow(solarWeatherdata, roundedDate, line)
+        setprecipitationDataToRow(precipitationWeatherdata, roundedDate, line)
 
     return data
+
+# helper function for addWeatherdata; saves the given solarWeatherdata to the given row
+def setSolarDataToRow(solarWeatherdata, roundedDate, line):
+    DS_10 = solarWeatherdata[roundedDate][3] # diffuse Himmelstrahlung 10min
+    if DS_10 != -999:
+        line[8] = DS_10
+
+    GS_10 = solarWeatherdata[roundedDate][4] # Globalstrahlung 10min
+    if GS_10 != -999:
+        line[9] = GS_10
+
+    SD_10 = solarWeatherdata[roundedDate][5] # Sonnenscheindauer 10min
+    if SD_10 != -999:
+        line[10] = SD_10
+
+    LS_10 = solarWeatherdata[roundedDate][6] # Langwellige Strahlung 10min
+    if LS_10 != -999:
+        line[11] = LS_10
+
+# helper function for addWeatherdata; saves the given precipitationWeatherdata to the given row
+def setprecipitationDataToRow(precipitationWeatherdata, roundedDate, line):
+    RWS_DAU_10 = precipitationWeatherdata[roundedDate][3] # Niederschlagsdauer 10min
+    if RWS_DAU_10 != -999:
+        line[12] = RWS_DAU_10
+
+    RWS_10 = precipitationWeatherdata[roundedDate][4] # Summe der Niederschlagsh. der vorangeg.10Min
+    if RWS_10 != -999:
+        line[13] = RWS_10
+
+    RWS_IND_10 = precipitationWeatherdata[roundedDate][5] # Niederschlagsindikator  10min
+    if RWS_IND_10 != -999:
+        line[14] = RWS_IND_10
+
 
 # adds a column of zeroes to the input np.array
 def addNewColToNpArray(array: np.array):
