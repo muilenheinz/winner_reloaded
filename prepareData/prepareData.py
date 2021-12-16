@@ -1,11 +1,12 @@
 import os
 import numpy as np
 from datetime import datetime
+import requests
 
 path = '../../data/PV/APS_PV/'
 
 # order of the np array:
-# (timestamp), measurement, time, dayOfWeek, isWeekend, weekNumber
+# (timestamp), measurement, time, dayOfWeek, isWeekend, weekNumber, isHoliday (Feiertag)
 
 # returns a np.array of all data given in the csv files in the directory indicated by path parameter
 # @path directory in which the csv files are placed
@@ -69,6 +70,46 @@ def convertTimestampToDateInformation(data: np.array):
 
     return data
 
+# adds the information to the given array, whether a day is a holiday (Feiertag) or not
+def getIsHoliday(data: np.array):
+    # add a new col to hold the new values
+    data = addNewColToNpArray(data)
+
+    year = None
+    holidays = []
+
+    for line in data:
+        # when the year changes in contrast to the last line download the holiday-values for this "new" year
+        timestamp = float(line[0])
+        datetimeValue = datetime.fromtimestamp(timestamp / 1000)
+        lineYear = datetimeValue.year
+        if year != lineYear:
+            year = lineYear
+            holidays = getHolidays(year, "TH")
+
+        # check if the current date is listed as holiday
+        lineDate = datetimeValue.strftime("%Y-%m-%d")
+        if lineDate in holidays:
+            line[6] = 1  # otherwise zero, which is the standard
+
+    return data
+
+# calling an API returns a list of dates, which are holidays (Feiertage) in the given year and the given state
+# @_state: String, abbreviation for the state, so e.g. Thüringen would be "TH"
+# @return list of dates in format YYY-MM-DD, which are holidays
+def getHolidays(_year, _state):
+    holidays = []
+    formatUrl = "https://feiertage-api.de/api/?jahr={year}".format(year=_year)
+    r = requests.get(formatUrl)
+    APIResult = r.json()[_state]
+
+    # for better performance and since the names of the holidays are not required for this task
+    # get a list which only contains the dates of the vacations
+    for holiday in APIResult:
+        holidays.append(APIResult[holiday]["datum"])
+
+    return holidays
+
 # adds a column of zeroes to the input np.array
 def addNewColToNpArray(array: np.array):
     dataLength = array.shape[0]
@@ -77,7 +118,7 @@ def addNewColToNpArray(array: np.array):
 
     return newArray
 
-
 # call all necessary steps
 data = loadData(path)
 dataWithDateInformation = convertTimestampToDateInformation(data)
+dataWithHolidayInformation = getIsHoliday(dataWithDateInformation)
