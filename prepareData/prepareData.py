@@ -3,12 +3,18 @@ import numpy as np
 from datetime import datetime
 import requests
 from datetimerange import DateTimeRange
-
+import csv
+import urllib.request
+import zipfile
 
 path = '../../data/PV/APS_PV/'
 
+# Overview of weatherstations available here:  https://opendata.dwd.de/climate_environment/CDC/help/CS_Stundenwerte_Beschreibung_Stationen.txt
+weatherStationId = "00853" # wheatherstationId Chemnitz
+# weatherStationId = "02444" # wheatherstationID Jena Sternwarte
+
 # order of the np array:
-# (timestamp), measurement, time, dayOfWeek, isWeekend, weekNumber, isHoliday (Feiertag)
+# (timestamp), measurement, time, dayOfWeek, isWeekend, weekNumber, isHoliday (Feiertag), isSchoolHoliday, LongwaveRadiation
 
 # returns a np.array of all data given in the csv files in the directory indicated by path parameter
 # @path directory in which the csv files are placed
@@ -164,6 +170,64 @@ def addIsSchoolHolidayInformation(data: np.array):
             line[7] = isHoliday
     return data
 
+def downloadDWDWeatherData(_year):
+    global weatherStationId
+    url = "https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/10_minutes/solar/historical/"
+    foldername = "10minutenwerte_SOLAR_{weatherstation_id}_{year}0101_{year}1231_hist.zip".format(weatherstation_id = weatherStationId, year = _year)
+    weatherdata = downloadAndUnzipContent(url + foldername)
+
+    return weatherdata
+
+# given the url to a zip file it downloads the folder, decompresses it and returns the content of the first file
+def downloadAndUnzipContent(_url):
+    print("dwonload ", _url)
+    filehandle, _ = urllib.request.urlretrieve(_url)
+    zip_file_object = zipfile.ZipFile(filehandle, 'r')
+    first_file = zip_file_object.namelist()[0]
+    file = zip_file_object.open(first_file)
+
+    content = file.read()
+    content = content.decode("utf-8") # convert byte-object to text
+
+    result = {}
+    reader = csv.reader(content.split('eor\r\n'), delimiter=';')
+    for row in reader:
+        if len(row) > 0 and row[0] != "MESS_DATUM" and row[0] != '   0.000':
+            result[row[1]] = row
+
+    return result
+
+# adds weatherdata given from the dwd to the given array, currently only the LongwaveRadiation
+def addWeatherdata(data: np.array):
+    year = None
+    data = addNewColToNpArray(data)
+
+    for line in data:
+        timestamp = float(line[0])
+        datetimeValue = datetime.fromtimestamp(timestamp / 1000)
+        lineYear = datetimeValue.year
+
+        # when the year changes against the last loop, load new weatherdata
+        if lineYear != year:
+            year = lineYear
+            print(line)
+            weatherdata = downloadDWDWeatherData(year)
+
+        # get the date for the weather by rounding the current minute to the next 10-minute, since weatherdata are
+        # given in 10-minute steps
+        currentMinute = float(datetimeValue.strftime("%M"))
+        remainder = currentMinute % 10
+        roundedMinute = currentMinute - remainder
+        roundedDate = str(datetimeValue.strftime("%Y%m%d%H")) + ("0" + str(int(roundedMinute)))[-2:]
+
+        # get the weather for the current situation
+        # GS_10 = globalstrahlung joule, sd_10 = sonnenscheindauer, Ls_10 = Langwellige Strahlung; jeweils 10 Minuten
+        LongwaveRadiation = weatherdata[roundedDate][5]
+        if LongwaveRadiation != -999:
+            line[8] = LongwaveRadiation
+
+    return data
+
 # adds a column of zeroes to the input np.array
 def addNewColToNpArray(array: np.array):
     dataLength = array.shape[0]
@@ -177,4 +241,6 @@ data = loadData(path)
 dataWithDateInformation = convertTimestampToDateInformation(data)
 dataWithHolidayInformation = addIsHolidayInformation(dataWithDateInformation)
 dataWithSchoolHolidayInformation = addIsSchoolHolidayInformation(dataWithHolidayInformation)
+dataWithWeatherInformation = addWeatherdata(dataWithSchoolHolidayInformation)
+
 print("debug")
