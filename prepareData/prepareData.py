@@ -2,6 +2,8 @@ import os
 import numpy as np
 from datetime import datetime
 import requests
+from datetimerange import DateTimeRange
+
 
 path = '../../data/PV/APS_PV/'
 
@@ -24,6 +26,7 @@ def getListOfAvailableFiles(_path):
             if file.find(".csv") != -1:
                 list_of_files.append(os.path.join(root,file))
 
+    list_of_files.sort()
     return list_of_files
 
 # @list_of_files: list of all files which shall be loaded into the resulting array
@@ -53,7 +56,7 @@ def convertTimestampToDateInformation(data: np.array):
 
         # get the time
         datetimeValue = datetime.fromtimestamp(timestamp / 1000)
-        time = datetimeValue.strftime("%H:%M")
+        time = datetimeValue.strftime("%Y-%m-%d %H:%M")
         line[2] = time
 
         # get the day of week as index, where Monday = 0 and Sunday = 6
@@ -71,7 +74,7 @@ def convertTimestampToDateInformation(data: np.array):
     return data
 
 # adds the information to the given array, whether a day is a holiday (Feiertag) or not
-def getIsHoliday(data: np.array):
+def addIsHolidayInformation(data: np.array):
     # add a new col to hold the new values
     data = addNewColToNpArray(data)
 
@@ -85,7 +88,7 @@ def getIsHoliday(data: np.array):
         lineYear = datetimeValue.year
         if year != lineYear:
             year = lineYear
-            holidays = getHolidays(year, "TH")
+            holidays = getHolidayList(year, "TH")
 
         # check if the current date is listed as holiday
         lineDate = datetimeValue.strftime("%Y-%m-%d")
@@ -97,7 +100,7 @@ def getIsHoliday(data: np.array):
 # calling an API returns a list of dates, which are holidays (Feiertage) in the given year and the given state
 # @_state: String, abbreviation for the state, so e.g. Thüringen would be "TH"
 # @return list of dates in format YYY-MM-DD, which are holidays
-def getHolidays(_year, _state):
+def getHolidayList(_year, _state):
     holidays = []
     formatUrl = "https://feiertage-api.de/api/?jahr={year}".format(year=_year)
     r = requests.get(formatUrl)
@@ -110,6 +113,57 @@ def getHolidays(_year, _state):
 
     return holidays
 
+# calling an api returns a list of DateTimeRanges, which are vacation in the given state and year
+def getSchoolHolidayList(_year, _state):
+    url = "https://ferien-api.de/api/v1/holidays/{state}/{year}".format(state=_state, year=_year)
+
+    r = requests.get(url)
+    APIResult = r.json()
+    schoolHolidays = []
+
+    for schoolHoliday in APIResult:
+        # schoolHolidaySpan = [schoolHoliday["start"], schoolHoliday["end"]]
+        schoolHolidaySpan = DateTimeRange(schoolHoliday["start"], schoolHoliday["end"])
+        schoolHolidays.append(schoolHolidaySpan)
+
+    return schoolHolidays
+
+# for each entry of the given data array it checks whether there are schoolHolidays and sets the data-value accordingly
+def addIsSchoolHolidayInformation(data: np.array):
+    # add a new col to hold the new values
+    data = addNewColToNpArray(data)
+    year = None
+    isHoliday = 0
+    day = None
+    schoolHolidays = []
+
+    for line in data:
+        # when the year changes in contrast to the last line download the holiday-values for this "new" year
+        timestamp = float(line[0])
+        datetimeValue = datetime.fromtimestamp(timestamp / 1000)
+        lineYear = datetimeValue.year
+        if year != lineYear:
+            year = lineYear
+            schoolHolidays = getSchoolHolidayList(year, "TH")
+
+        # when the day changed against the previous one check if the new day is in some Holiday, otherwise just copy
+        # the value of the last loop-passage
+        lineDay = datetimeValue.day
+        if lineDay != day:
+            day = lineDay
+            isHoliday = 0
+
+            # check if the current date lies in a schoolHoliday
+            lineDate = datetimeValue.strftime("%Y-%m-%dT%H:%M:%S+0000")
+            for schoolHolidayRange in schoolHolidays:
+                if lineDate in schoolHolidayRange:
+                    line[7] = 1
+                    isHoliday = 1
+                    break
+        else:
+            line[7] = isHoliday
+    return data
+
 # adds a column of zeroes to the input np.array
 def addNewColToNpArray(array: np.array):
     dataLength = array.shape[0]
@@ -121,4 +175,6 @@ def addNewColToNpArray(array: np.array):
 # call all necessary steps
 data = loadData(path)
 dataWithDateInformation = convertTimestampToDateInformation(data)
-dataWithHolidayInformation = getIsHoliday(dataWithDateInformation)
+dataWithHolidayInformation = addIsHolidayInformation(dataWithDateInformation)
+dataWithSchoolHolidayInformation = addIsSchoolHolidayInformation(dataWithHolidayInformation)
+print("debug")
