@@ -3,9 +3,11 @@ import numpy as np
 from datetime import datetime
 import requests
 from datetimerange import DateTimeRange
+from datetime import date
 import csv
 import urllib.request
 import zipfile
+from ftplib import FTP
 
 path = '../../data/PV/APS_PV/'
 
@@ -173,15 +175,23 @@ def addIsSchoolHolidayInformation(data: np.array):
 # @_type: "solar" or "precipitation"
 def downloadDWDWeatherData(_year, _type):
     global weatherStationId
-    if _type == "solar":
-        url = "https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/10_minutes/solar/historical/"
-        foldername = "10minutenwerte_SOLAR_{weatherstation_id}_{year}0101_{year}1231_hist.zip".format(weatherstation_id = weatherStationId, year = _year)
-        weatherdata = downloadAndUnzipContent(url + foldername)
-    else:
-        url = "https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/10_minutes/precipitation/historical/"
-        foldername = "10minutenwerte_nieder_{weatherstation_id}_{year}0101_{year}1231_hist.zip".format(weatherstation_id = weatherStationId, year = _year)
-        weatherdata = downloadAndUnzipContent(url + foldername)
+    current_year = date.today().year
 
+    if _type == "precipitation":
+        internalType = "nieder"
+    else:
+        internalType = "SOLAR"
+
+    url = "https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/10_minutes/{type}/".format(type = _type)
+    if current_year != _year:
+        url += "historical/"
+        foldername = "10minutenwerte_{type}_{weatherstation_id}_{year}0101_{year}1231_hist.zip"
+        foldername = foldername.format(weatherstation_id = weatherStationId, year = _year, type=internalType)
+    else:
+        url += "recent/"
+        foldername = "10minutenwerte_{type}_{station}_akt.zip".format(station = weatherStationId, type=internalType)
+
+    weatherdata = downloadAndUnzipContent(url + foldername)
     return weatherdata
 
 # given the url to a zip file it downloads the folder, decompresses it and returns the content of the first file
@@ -234,6 +244,7 @@ def addWeatherdata(data: np.array):
         roundedDate = str(datetimeValue.strftime("%Y%m%d%H")) + ("0" + str(int(roundedMinute)))[-2:]
 
         # get the weatherdata for the current situation
+
         setSolarDataToRow(solarWeatherdata, roundedDate, line)
         setprecipitationDataToRow(precipitationWeatherdata, roundedDate, line)
 
