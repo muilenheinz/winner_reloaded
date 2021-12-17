@@ -59,12 +59,14 @@ def convertTimestampToDateInformation(data: np.array):
 
         # get the time
         datetimeValue = datetime.fromtimestamp(timestamp / 1000)
-        time = datetimeValue.strftime("%Y-%m-%d %H:%M")
+        time = datetimeValue.strftime("%H:%M:%S")
         line[2] = time
 
         # get the day of week as index, where Monday = 0 and Sunday = 6
         dayOfWeek = datetimeValue.weekday()
-        line[3] = dayOfWeek
+        weekdayVector = [0, 0, 0, 0, 0, 0, 0]
+        weekdayVector[dayOfWeek] = 1
+        line[3] = str(weekdayVector)
 
         # get isWeekend
         if dayOfWeek == 5 or dayOfWeek == 6:
@@ -184,7 +186,7 @@ def downloadDWDWeatherData(_year, _type):
 
 # given the url to a zip file it downloads the folder, decompresses it and returns the content of the first file
 def downloadAndUnzipContent(_url):
-    print("dwonload ", _url)
+    print("download ", _url)
     filehandle, _ = urllib.request.urlretrieve(_url)
     zip_file_object = zipfile.ZipFile(filehandle, 'r')
     first_file = zip_file_object.namelist()[0]
@@ -242,32 +244,46 @@ def setSolarDataToRow(solarWeatherdata, roundedDate, line):
     DS_10 = solarWeatherdata[roundedDate][3] # diffuse Himmelstrahlung 10min
     if DS_10 != -999:
         line[8] = DS_10
+    else:
+        line[8] = 0
 
     GS_10 = solarWeatherdata[roundedDate][4] # Globalstrahlung 10min
     if GS_10 != -999:
         line[9] = GS_10
+    else:
+        line[9] = 0
 
     SD_10 = solarWeatherdata[roundedDate][5] # Sonnenscheindauer 10min
     if SD_10 != -999:
         line[10] = SD_10
+    else:
+        line[10] = 0
 
     LS_10 = solarWeatherdata[roundedDate][6] # Langwellige Strahlung 10min
     if LS_10 != -999:
         line[11] = LS_10
+    else:
+        line[11] = 0
 
 # helper function for addWeatherdata; saves the given precipitationWeatherdata to the given row
 def setprecipitationDataToRow(precipitationWeatherdata, roundedDate, line):
     RWS_DAU_10 = precipitationWeatherdata[roundedDate][3] # Niederschlagsdauer 10min
     if RWS_DAU_10 != -999:
         line[12] = RWS_DAU_10
+    else:
+        line[12] = 0
 
     RWS_10 = precipitationWeatherdata[roundedDate][4] # Summe der Niederschlagsh. der vorangeg.10Min
     if RWS_10 != -999:
         line[13] = RWS_10
+    else:
+        line[13] = 0
 
     RWS_IND_10 = precipitationWeatherdata[roundedDate][5] # Niederschlagsindikator  10min
     if RWS_IND_10 != -999:
         line[14] = RWS_IND_10
+    else:
+        line[14] = 0
 
 
 # adds a column of zeroes to the input np.array
