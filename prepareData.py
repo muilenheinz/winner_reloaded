@@ -9,7 +9,7 @@ import urllib.request
 import zipfile
 from ftplib import FTP
 
-path = '../../data/PV/APS_PV/'
+path = '../data/PV/APS_PV/'
 
 # Overview of weatherstations available here:  https://opendata.dwd.de/climate_environment/CDC/help/CS_Stundenwerte_Beschreibung_Stationen.txt
 weatherStationId = "00853" # wheatherstationId Chemnitz
@@ -316,4 +316,4 @@ dataWithSchoolHolidayInformation = addIsSchoolHolidayInformation(dataWithHoliday
 dataWithWeatherInformation = addWeatherdata(dataWithSchoolHolidayInformation)
 finalData = deleteColFromNpArray(dataWithWeatherInformation, 0)
 
-print("debug")
+print("debug prepareData")
