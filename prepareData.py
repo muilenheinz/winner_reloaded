@@ -43,7 +43,10 @@ def loadCSVDataFromFiles(list_of_files):
         for i, line in enumerate(f):
             if i > 1: # exclude the header row
                 data = line.strip().split(",")
-                result.append([data[0], data[1]])
+                if float(data[1]) < 1.5:  # data cleaning
+                    result.append([data[0], data[1]])
+                else:
+                    print("throw away value: ", data[1])
 
     return np.array(result)
 
