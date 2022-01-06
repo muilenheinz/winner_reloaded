@@ -296,7 +296,6 @@ def setprecipitationDataToRow(precipitationWeatherdata, roundedDate, line):
     else:
         line[14] = 0
 
-
 # adds a column of zeroes to the input np.array
 def addNewColToNpArray(array: np.array):
     dataLength = array.shape[0]
@@ -305,11 +304,16 @@ def addNewColToNpArray(array: np.array):
 
     return newArray
 
+def deleteColFromNpArray(array: np.array, index):
+    array = np.delete(array, index, 1)
+    return array
+
 # call all necessary steps
 data = loadData(path)
 dataWithDateInformation = convertTimestampToDateInformation(data)
 dataWithHolidayInformation = addIsHolidayInformation(dataWithDateInformation)
 dataWithSchoolHolidayInformation = addIsSchoolHolidayInformation(dataWithHolidayInformation)
 dataWithWeatherInformation = addWeatherdata(dataWithSchoolHolidayInformation)
+finalData = deleteColFromNpArray(dataWithWeatherInformation, 0)
 
 print("debug")
