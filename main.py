@@ -8,8 +8,8 @@ weatherStationIdJena = "02444"      # wheatherstationID Jena Sternwarte
 
 
 # Data for Alfons-Pech-Straße, Chemnitz
-# alfonsPechStrData = prepareData('../data/PV/APS_PV/', weatherStationIdChemnitz, True, ",")
-# executeFeasibilityAnalysis(alfonsPechStrData)
+alfonsPechStrData = prepareData('../data/PV/APS_PV/', weatherStationIdChemnitz, True, ",", 1)
+executeFeasibilityAnalysis(alfonsPechStrData)
 
 
 # Data for tanzende Siedlung, Chemnitz

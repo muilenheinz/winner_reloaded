@@ -1,8 +1,10 @@
 # winner_reloaded
 
-order of the np array:
-- (timestamp)
-- measurement
+## prepareData.py
+load data from csv files and add information on candidate values like the weather or holidays to them
+
+order of the appended data in the np array:
+- (values from the csv files)
 - time
 - dayOfWeek
 - isWeekend
@@ -16,3 +18,12 @@ order of the np array:
 - Niederschlagsdauer 10min (RWS_DAU_10)
 - Summe der Niederschlagsh. der vorangeg.10Min (RWS_10)
 - Niederschlagsindikator  10min (RWS_IND_10)
+
+## checkFeasibility.py
+
+do some calculations to prove the feasibility of the given data for machine learning
+
+- plain plotting of the data
+- (normalized) autocorrelation
+- differential data (measurement value - measurement value of predecessor in data)
+- Kendal rank correlations

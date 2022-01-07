@@ -7,7 +7,7 @@ from datetime import date
 import csv
 import urllib.request
 import zipfile
-from ftplib import FTP
+import time
 
 weatherStationId = None
 
@@ -52,21 +52,21 @@ def convertTimestampToDateInformation(data: np.array):
         # get the time
         datetimeValue = datetime.fromtimestamp(timestamp / 1000)
         time = datetimeValue.strftime("%H:%M:%S")
-        line[2] = time
+        line[-4] = time
 
         # get the day of week as index, where Monday = 0 and Sunday = 6
         dayOfWeek = datetimeValue.weekday()
         weekdayVector = [0, 0, 0, 0, 0, 0, 0]
         weekdayVector[dayOfWeek] = 1
-        line[3] = str(weekdayVector)
+        line[-3] = str(weekdayVector)
 
         # get isWeekend
         if dayOfWeek == 5 or dayOfWeek == 6:
-            line[4] = 1  # otherwise, 0, which is the standard value
+            line[-2] = 1  # otherwise, 0, which is the standard value
 
         # get the week number
         weeknumber = datetimeValue.isocalendar()[1]
-        line[5] = weeknumber
+        line[-1] = weeknumber
 
     return data
 
@@ -90,7 +90,7 @@ def addIsHolidayInformation(data: np.array):
         # check if the current date is listed as holiday
         lineDate = datetimeValue.strftime("%Y-%m-%d")
         if lineDate in holidays:
-            line[6] = 1  # otherwise zero, which is the standard
+            line[-1] = 1  # otherwise zero, which is the standard
 
     return data
 
@@ -163,7 +163,10 @@ def addIsSchoolHolidayInformation(data: np.array):
 
 # downloads weatherdata from the dwd
 # @_type: "solar" or "precipitation"
-def downloadDWDWeatherData(_year, _type):
+# @_mode: (for internal use) in "historical" mode it will search for data of past years in the /historical folder
+#       however, the case might occur that at the start of the new year the data of the old year are not yet uploaded
+#       to the /historical folder yet. In this case the mode "recent" will load data from the /recent folder
+def downloadDWDWeatherData(_year, _type, _mode="historical"):
     global weatherStationId
     current_year = date.today().year
 
@@ -173,7 +176,7 @@ def downloadDWDWeatherData(_year, _type):
         internalType = "SOLAR"
 
     url = "https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/10_minutes/{type}/".format(type = _type)
-    if current_year != _year:
+    if current_year != _year and _mode == "historical":
         url += "historical/"
         foldername = "10minutenwerte_{type}_{weatherstation_id}_{year}0101_{year}1231_hist.zip"
         foldername = foldername.format(weatherstation_id = weatherStationId, year = _year, type=internalType)
@@ -182,12 +185,19 @@ def downloadDWDWeatherData(_year, _type):
         foldername = "10minutenwerte_{type}_{station}_akt.zip".format(station = weatherStationId, type=internalType)
 
     weatherdata = downloadAndUnzipContent(url + foldername)
+    if weatherdata == False:
+        downloadDWDWeatherData(_year, _type, "recent")
+        exit()
     return weatherdata
 
 # given the url to a zip file it downloads the folder, decompresses it and returns the content of the first file
 def downloadAndUnzipContent(_url):
     print("download ", _url)
-    filehandle, _ = urllib.request.urlretrieve(_url)
+    try:
+        filehandle, _ = urllib.request.urlretrieve(_url)
+    except urllib.error.HTTPError as exception:
+        return False    # most likely a 404-error
+
     zip_file_object = zipfile.ZipFile(filehandle, 'r')
     first_file = zip_file_object.namelist()[0]
     file = zip_file_object.open(first_file)
@@ -244,47 +254,47 @@ def addWeatherdata(data: np.array):
 def setSolarDataToRow(solarWeatherdata, roundedDate, line):
     DS_10 = solarWeatherdata[roundedDate][3] # diffuse Himmelstrahlung 10min
     if DS_10 != -999:
-        line[8] = DS_10
+        line[-7] = DS_10
     else:
-        line[8] = 0
+        line[-7] = 0
 
     GS_10 = solarWeatherdata[roundedDate][4] # Globalstrahlung 10min
     if GS_10 != -999:
-        line[9] = GS_10
+        line[-6] = GS_10
     else:
-        line[9] = 0
+        line[-6] = 0
 
     SD_10 = solarWeatherdata[roundedDate][5] # Sonnenscheindauer 10min
     if SD_10 != -999:
-        line[10] = SD_10
+        line[-5] = SD_10
     else:
-        line[10] = 0
+        line[-5] = 0
 
     LS_10 = solarWeatherdata[roundedDate][6] # Langwellige Strahlung 10min
-    if LS_10 != -999:
-        line[11] = LS_10
+    if LS_10 != "-999":
+        line[-4] = LS_10
     else:
-        line[11] = 0
+        line[-4] = 0
 
 # helper function for addWeatherdata; saves the given precipitationWeatherdata to the given row
 def setprecipitationDataToRow(precipitationWeatherdata, roundedDate, line):
     RWS_DAU_10 = precipitationWeatherdata[roundedDate][3] # Niederschlagsdauer 10min
     if RWS_DAU_10 != -999:
-        line[12] = RWS_DAU_10
+        line[-3] = RWS_DAU_10
     else:
-        line[12] = 0
+        line[-3] = 0
 
     RWS_10 = precipitationWeatherdata[roundedDate][4] # Summe der Niederschlagsh. der vorangeg.10Min
     if RWS_10 != -999:
-        line[13] = RWS_10
+        line[-2] = RWS_10
     else:
-        line[13] = 0
+        line[-2] = 0
 
     RWS_IND_10 = precipitationWeatherdata[roundedDate][5] # Niederschlagsindikator  10min
     if RWS_IND_10 != -999:
-        line[14] = RWS_IND_10
+        line[-1] = RWS_IND_10
     else:
-        line[14] = 0
+        line[-1] = 0
 
 # adds a column of zeroes to the input np.array
 def addNewColToNpArray(array: np.array):
@@ -298,15 +308,29 @@ def deleteColFromNpArray(array: np.array, index):
     array = np.delete(array, index, 1)
     return array
 
+def convertDateColToTimestampCol(data: np.array, _index):
+    def convertDateToTimestamp(input):
+        timestamp = time.mktime(time.strptime(input[0], '%d.%m.%Y %H:%M:%S'))
+        input[0] = int(timestamp * 1000)
+        return input
+
+    output = np.apply_along_axis(convertDateToTimestamp, 1, data)
+    return output
+
 # gets all data for the given path and enriches it with various information
 # @_path: path of the directory of the desired files as string relative to this folder
 # @_weatherStationId: dwd-id of the station the weather shall be loaded from
-# @_ withTimestamp: boolean if the timestamp col shall be deleted or not
+# @_withTimestamp: boolean if the timestamp col shall be deleted or not
 def prepareData(_path, _weatherStationId, _withTimestamp, _csvSeparator, _headerRows):
     global weatherStationId
     weatherStationId = _weatherStationId
 
     data = loadData(_path, _csvSeparator, _headerRows)
+
+    # if date is given in datetime format (e.g. 12.12.21 23:00) convert it to timestamp
+    if not data[0][0].isnumeric():
+        data = convertDateColToTimestampCol(data, 0)
+
     dataWithDateInformation = convertTimestampToDateInformation(data)
     dataWithHolidayInformation = addIsHolidayInformation(dataWithDateInformation)
     dataWithSchoolHolidayInformation = addIsSchoolHolidayInformation(dataWithHolidayInformation)
@@ -315,6 +339,6 @@ def prepareData(_path, _weatherStationId, _withTimestamp, _csvSeparator, _header
     if _withTimestamp:
         return dataWithWeatherInformation
     else:
-        return  deleteColFromNpArray(dataWithWeatherInformation, 0)
+        return deleteColFromNpArray(dataWithWeatherInformation, 0)
 
 print("debug prepareData")
