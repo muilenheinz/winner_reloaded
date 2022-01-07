@@ -15,7 +15,7 @@ def plotTimeSeries(dataY, dataX=None, _label="scatter", _type="scatter"):
             endDatetimeValue = datetime.fromtimestamp(dataX[dataX.size - 1] / 1000)
             printableBegin = beginDatetimeValue.strftime("%d/%m/%Y")
             printableEnd = endDatetimeValue.strftime("%d/%m/%Y")
-            _label = _label + " of " + printableBegin + "-" + printableEnd
+            _label = _label + " (" + printableBegin + "-" + printableEnd + ")"
 
     if _type == "scatter":
         plt.scatter(dataX, dataY, marker=".", label=_label)
@@ -70,7 +70,7 @@ def doCorrelationAnalysis(data: np.array):
     # plot coefficients as barchart
     plotTimeSeries(kendallCoefficients, colNames, "Kendall Rank correlations", "bar")
 
-def executeFeasibilityAnalysis(_data: np.array):
+def executeFeasibilityAnalysisalfonsPechStr(_data: np.array):
     # the first three days
     threeDaysTimestampData = np.array(_data[:4320,0], dtype=float)
     threeDaysMeasuremntData = np.array(_data[:4320,1], dtype=float)
@@ -93,4 +93,35 @@ def executeFeasibilityAnalysis(_data: np.array):
     dataWithoutTimestamp = deleteColFromNpArray(_data, 0)
     doCorrelationAnalysis(dataWithoutTimestamp) # from prepareData.py
 
-print("debug checkFeasibility")
+def executeFeasibilityAnalysistanzendeSiedlung(_data: np.array):
+    # the first three days
+    threeDayData = {}
+    threeDayData["timestamp"] = np.array(_data[:96,0], dtype=float)
+    threeDayData["networkObtainanceQuarter"] = np.array(_data[:96,1], dtype=float)
+    threeDayData["networkFeedInQuarter"] = np.array(_data[:96,2], dtype=float)
+    threeDayData["PVConsumption"] = np.array(_data[:96,3], dtype=float)
+    threeDayData["PVFeedIn"] = np.array(_data[:96,4], dtype=float)
+
+    # plot time series of the plain data
+    plotTimeSeries(threeDayData["networkObtainanceQuarter"], threeDayData["timestamp"], "Netzbezug durch das gesamete Quartier")
+    plotTimeSeries(threeDayData["networkFeedInQuarter"], threeDayData["timestamp"], "Netzeinspeisung durch das Quartier")
+    plotTimeSeries(threeDayData["PVConsumption"], threeDayData["timestamp"], "Bezug durch PV-Analge")
+    plotTimeSeries(threeDayData["PVFeedIn"], threeDayData["timestamp"], "Einspeisung der PV-Anlage ins Quartier")
+
+    # all available data
+    # allDaysTimestampData = np.array(_data[:,0], dtype=float)
+    # allDaysMeasurementData = np.array(_data[:,1], dtype=float)
+
+    # # draw the plain production data
+    # plotTimeSeries(allDaysMeasurementData, allDaysTimestampData, "production data")
+    #
+    # # check the autocorrelations
+    # checkAutocorrelation(threeDaysMeasuremntData, threeDaysTimestampData)
+    # checkAutocorrelation(allDaysMeasurementData, allDaysTimestampData)
+    #
+    # # check the difference values
+    # calcDifferenceSeries(threeDaysMeasuremntData, threeDaysTimestampData)
+    # calcDifferenceSeries(allDaysMeasurementData, allDaysTimestampData)
+    #
+    # dataWithoutTimestamp = deleteColFromNpArray(_data, 0)
+    # doCorrelationAnalysis(dataWithoutTimestamp) # from prepareData.py

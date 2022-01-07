@@ -8,6 +8,7 @@ import csv
 import urllib.request
 import zipfile
 import time
+import re
 
 weatherStationId = None
 
@@ -16,6 +17,7 @@ weatherStationId = None
 # @_csvSeparator: sign with which the csv values are separated, typically , or ;
 # @headerRows: number of lines which do only contain headlines
 def loadData(_path, _csvSeparator, _headerRows):
+    print("load data from csv files")
     # get List of available Files
     list_of_files = []
     for root, dirs, files in os.walk(_path):
@@ -33,13 +35,24 @@ def loadData(_path, _csvSeparator, _headerRows):
             if i > _headerRows:     # exclude the header row(s)
                 if line != "" and line != "\n" and line != '""':
                     data = line.replace('"', '').strip().split(_csvSeparator)
+                    data = convertDecimalCommaToDecimalPointInDict(data)
                     result.append(data)
 
     return np.array(result)
 
+# checks all fields in the given dict whether they contain numbers with a decimal comma and
+# converts them to decimal point format when necessary
+def convertDecimalCommaToDecimalPointInDict(dict):
+    for key, value in enumerate(dict):
+        # check if it is numeric in the form x,xxx
+        if re.search("[0-9]*,[0-9]", value):
+            dict[key] = value.replace(",", ".")
+    return dict
+
 # from the timestamp information of each line in the np.array extract
 # time, weekday, isWeekend, weekNumber, isHoliday (Feiertag) and add it to a new column
 def convertTimestampToDateInformation(data: np.array):
+    print("get date information")
 
     data = addNewColToNpArray(data)  # for the time
     data = addNewColToNpArray(data)  # for the weekday
@@ -72,6 +85,7 @@ def convertTimestampToDateInformation(data: np.array):
 
 # adds the information to the given array, whether a day is a holiday (Feiertag) or not
 def addIsHolidayInformation(data: np.array):
+    print("add Holiday Information")
     # add a new col to hold the new values
     data = addNewColToNpArray(data)
 
@@ -127,6 +141,7 @@ def getSchoolHolidayList(_year, _state):
 
 # for each entry of the given data array it checks whether there are schoolHolidays and sets the data-value accordingly
 def addIsSchoolHolidayInformation(data: np.array):
+    print("add school holiday information")
     # add a new col to hold the new values
     data = addNewColToNpArray(data)
     year = None
@@ -186,8 +201,8 @@ def downloadDWDWeatherData(_year, _type, _mode="historical"):
 
     weatherdata = downloadAndUnzipContent(url + foldername)
     if weatherdata == False:
-        downloadDWDWeatherData(_year, _type, "recent")
-        exit()
+        return downloadDWDWeatherData(_year, _type, "recent")
+
     return weatherdata
 
 # given the url to a zip file it downloads the folder, decompresses it and returns the content of the first file
@@ -215,6 +230,7 @@ def downloadAndUnzipContent(_url):
 
 # adds weatherdata given from the dwd to the given array, currently only the LongwaveRadiation
 def addWeatherdata(data: np.array):
+    print("add weatherdata")
     year = None
     data = addNewColToNpArray(data) # DS_10; diffuse Himmelstrahlung 10min
     data = addNewColToNpArray(data) # GS_10; Globalstrahlung 10min
@@ -317,6 +333,16 @@ def convertDateColToTimestampCol(data: np.array, _index):
     output = np.apply_along_axis(convertDateToTimestamp, 1, data)
     return output
 
+def dataCleaning(data: np.array):
+    def replaceMinusWithZero(input):
+        if input == " - ":
+            return 0
+        else:
+            return input
+    replaceMinusWithZeroVectorized = np.vectorize(replaceMinusWithZero)
+    result = replaceMinusWithZeroVectorized(data)
+    return result
+
 # gets all data for the given path and enriches it with various information
 # @_path: path of the directory of the desired files as string relative to this folder
 # @_weatherStationId: dwd-id of the station the weather shall be loaded from
@@ -335,10 +361,10 @@ def prepareData(_path, _weatherStationId, _withTimestamp, _csvSeparator, _header
     dataWithHolidayInformation = addIsHolidayInformation(dataWithDateInformation)
     dataWithSchoolHolidayInformation = addIsSchoolHolidayInformation(dataWithHolidayInformation)
     dataWithWeatherInformation = addWeatherdata(dataWithSchoolHolidayInformation)
+    dataCleaned = dataCleaning(dataWithWeatherInformation)
 
     if _withTimestamp:
-        return dataWithWeatherInformation
+        return dataCleaned
     else:
-        return deleteColFromNpArray(dataWithWeatherInformation, 0)
+        return deleteColFromNpArray(dataCleaned, 0)
 
-print("debug prepareData")
