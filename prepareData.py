@@ -9,22 +9,14 @@ import urllib.request
 import zipfile
 from ftplib import FTP
 
-path = '../data/PV/APS_PV/'
-
-# Overview of weatherstations available here:  https://opendata.dwd.de/climate_environment/CDC/help/CS_Stundenwerte_Beschreibung_Stationen.txt
-weatherStationId = "00853" # wheatherstationId Chemnitz
-# weatherStationId = "02444" # wheatherstationID Jena Sternwarte
+weatherStationId = None
 
 # returns a np.array of all data given in the csv files in the directory indicated by path parameter
 # @path directory in which the csv files are placed
-def loadData(path):
-    list_of_files = getListOfAvailableFiles(path)
-    data = loadCSVDataFromFiles(list_of_files)
-    return data
-
-# load list of files available in the given directory into the global var list_of_files
-# @path directory in which csv files shall be searched for
-def getListOfAvailableFiles(_path):
+# @_csvSeparator: sign with which the csv values are separated, typically , or ;
+# @headerRows: number of lines which do only contain headlines
+def loadData(_path, _csvSeparator, _headerRows):
+    # get List of available Files
     list_of_files = []
     for root, dirs, files in os.walk(_path):
         for file in files:
@@ -32,21 +24,16 @@ def getListOfAvailableFiles(_path):
                 list_of_files.append(os.path.join(root,file))
 
     list_of_files.sort()
-    return list_of_files
 
-# @list_of_files: list of all files which shall be loaded into the resulting array
-# @return concatenated np array of all data in the files indicated by list_of_files
-def loadCSVDataFromFiles(list_of_files):
+    # iterate these files and load all available data into np.array
     result = []
     for name in list_of_files:
-        f = open(name)
+        f = open(name, encoding="utf-8")
         for i, line in enumerate(f):
-            if i > 1: # exclude the header row
-                data = line.strip().split(",")
-                if float(data[1]) < 1.5:  # data cleaning
-                    result.append([data[0], data[1]])
-                else:
-                    print("throw away value: ", data[1])
+            if i > _headerRows:     # exclude the header row(s)
+                if line != "" and line != "\n" and line != '""':
+                    data = line.replace('"', '').strip().split(_csvSeparator)
+                    result.append(data)
 
     return np.array(result)
 
@@ -311,12 +298,23 @@ def deleteColFromNpArray(array: np.array, index):
     array = np.delete(array, index, 1)
     return array
 
-# call all necessary steps
-data = loadData(path)
-dataWithDateInformation = convertTimestampToDateInformation(data)
-dataWithHolidayInformation = addIsHolidayInformation(dataWithDateInformation)
-dataWithSchoolHolidayInformation = addIsSchoolHolidayInformation(dataWithHolidayInformation)
-dataWithWeatherInformation = addWeatherdata(dataWithSchoolHolidayInformation)
-finalData = deleteColFromNpArray(dataWithWeatherInformation, 0)
+# gets all data for the given path and enriches it with various information
+# @_path: path of the directory of the desired files as string relative to this folder
+# @_weatherStationId: dwd-id of the station the weather shall be loaded from
+# @_ withTimestamp: boolean if the timestamp col shall be deleted or not
+def prepareData(_path, _weatherStationId, _withTimestamp, _csvSeparator, _headerRows):
+    global weatherStationId
+    weatherStationId = _weatherStationId
+
+    data = loadData(_path, _csvSeparator, _headerRows)
+    dataWithDateInformation = convertTimestampToDateInformation(data)
+    dataWithHolidayInformation = addIsHolidayInformation(dataWithDateInformation)
+    dataWithSchoolHolidayInformation = addIsSchoolHolidayInformation(dataWithHolidayInformation)
+    dataWithWeatherInformation = addWeatherdata(dataWithSchoolHolidayInformation)
+
+    if _withTimestamp:
+        return dataWithWeatherInformation
+    else:
+        return  deleteColFromNpArray(dataWithWeatherInformation, 0)
 
 print("debug prepareData")

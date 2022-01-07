@@ -70,29 +70,27 @@ def doCorrelationAnalysis(data: np.array):
     # plot coefficients as barchart
     plotTimeSeries(kendallCoefficients, colNames, "Kendall Rank correlations", "bar")
 
-def executeAnalysis():
-    # get sample data
-    useData = dataWithWeatherInformation # from the prepareData script
+def executeFeasibilityAnalysis(_data: np.array):
     # the first three days
-    threeDaysDataX = np.array(useData[:4320,0], dtype=float)
-    threeDaysDataY = np.array(useData[:4320,1], dtype=float)
+    threeDaysTimestampData = np.array(_data[:4320,0], dtype=float)
+    threeDaysMeasuremntData = np.array(_data[:4320,1], dtype=float)
     # all available data
-    allDaysDataX = np.array(useData[:,0], dtype=float)
-    allDaysDataY = np.array(useData[:,1], dtype=float)
+    allDaysTimestampData = np.array(_data[:,0], dtype=float)
+    allDaysMeasurementData = np.array(_data[:,1], dtype=float)
 
     # draw the plain production data
-    # plotTimeSeries(threeDaysDataY, threeDaysDataX, "production data")
-    # plotTimeSeries(allDaysDataY, allDaysDataX, "production data")
-    #
-    # # check the autocorrelations
-    # checkAutocorrelation(threeDaysDataY, threeDaysDataX)
-    # checkAutocorrelation(allDaysDataY, allDaysDataX)
-    #
-    # # check the difference values
-    # calcDifferenceSeries(threeDaysDataY, threeDaysDataX)
-    # calcDifferenceSeries(allDaysDataY, allDaysDataX)
+    plotTimeSeries(threeDaysMeasuremntData, threeDaysTimestampData, "production data")
+    plotTimeSeries(allDaysMeasurementData, allDaysTimestampData, "production data")
 
-    doCorrelationAnalysis(finalData) # from prepareData.py
+    # check the autocorrelations
+    checkAutocorrelation(threeDaysMeasuremntData, threeDaysTimestampData)
+    checkAutocorrelation(allDaysMeasurementData, allDaysTimestampData)
 
-executeAnalysis()
+    # check the difference values
+    calcDifferenceSeries(threeDaysMeasuremntData, threeDaysTimestampData)
+    calcDifferenceSeries(allDaysMeasurementData, allDaysTimestampData)
+
+    dataWithoutTimestamp = deleteColFromNpArray(_data, 0)
+    doCorrelationAnalysis(dataWithoutTimestamp) # from prepareData.py
+
 print("debug checkFeasibility")
