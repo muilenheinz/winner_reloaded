@@ -9,11 +9,13 @@ weatherStationIdJena = "02444"      # wheatherstationID Jena Sternwarte
 
 # check and prepare Data for Alfons-Pech-Straße, Chemnitz
 def calcAlfonsPechStrasse():
+    print("######################## calculations for Alfons-Pech-Strasse #######################")
     alfonsPechStrData = prepareData('../data/PV/APS_PV/', weatherStationIdChemnitz, True, ",", 1)
-    executeFeasibilityAnalysisalfonsPechStr(alfonsPechStrData)
+    executeFeasibilityAnalysisalfonsPechStr(alfonsPechStrData, "red")
 
 # chak and prepare Data for tanzende Siedlung, Chemnitz
 def calcTanzendeSiedlung():
+    print("######################## calculations for tanzende Siedlung #######################")
     tanzendeSiedlungData = prepareData('../data/TAS/inetz/', weatherStationIdChemnitz, True, ";", 2)
 
     # remove cols for blinddata, Unit and state from the data
@@ -22,7 +24,7 @@ def calcTanzendeSiedlung():
     for i in removeCols:
         tanzendeSiedlungData = np.delete(tanzendeSiedlungData, i, 1)
 
-    executeFeasibilityAnalysistanzendeSiedlung(tanzendeSiedlungData, False, False, False, True)
+    executeFeasibilityAnalysistanzendeSiedlung(tanzendeSiedlungData, True, True, True, True, "green")
 
 calcAlfonsPechStrasse()
 calcTanzendeSiedlung()
