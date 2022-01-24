@@ -70,7 +70,7 @@ def checkIsTimestampArray(dataX: np.array):
 
 # calcs the autocorrelation of the values of dataY,
 # dataX contains the corresponding timestamps used later for plotting
-def calcAutocorrelation(dataY: np.array, dataX: np.array, _chartLabel=None):
+def calcAutocorrelation(dataY: np.array, dataX: np.array, _chartLabel=None, _indicesOfValesToPlot=None):
     result = np.correlate(dataY, dataY, mode='full')
     result = result[result.size//2:]
     normalizedResult = result / float(result.max())
@@ -78,6 +78,12 @@ def calcAutocorrelation(dataY: np.array, dataX: np.array, _chartLabel=None):
         _chartLabel = "normalisierte Autokorrelation"
     else:
         _chartLabel = "normalisierte Autokorrelation " + _chartLabel
+
+    # only show the first n values
+    if _indicesOfValesToPlot is not None:
+        normalizedResult = normalizedResult[_indicesOfValesToPlot[0]:_indicesOfValesToPlot[1]]
+        if dataX is not None:
+            dataX = dataX[_indicesOfValesToPlot[0]:_indicesOfValesToPlot[1]]
 
     plotTimeSeries(normalizedResult, dataX, _chartLabel, "line")
 
@@ -188,11 +194,6 @@ def executeFeasibilityAnalysistanzendeSiedlung(
 
     # plot time series of the plain data
     if _plotPlainTimeSeries:
-        # plotTimeSeries(threeDayData["networkObtainanceQuarter"], threeDayData["timestamp"], labels["networkObtainanceQuarter"])
-        # plotTimeSeries(threeDayData["networkFeedInQuarter"], threeDayData["timestamp"], labels["networkFeedInQuarter"])
-        # plotTimeSeries(threeDayData["PVConsumption"], threeDayData["timestamp"], labels["PVConsumption"])
-        # plotTimeSeries(threeDayData["PVFeedIn"], threeDayData["timestamp"], labels["PVFeedIn"])
-
         plotTimeSeries(allData["networkObtainanceQuarter"], allData["timestamp"], labels["networkObtainanceQuarter"], "line")
         plotTimeSeries(allData["networkFeedInQuarter"], allData["timestamp"], labels["networkFeedInQuarter"], "line")
         plotTimeSeries(allData["PVConsumption"], allData["timestamp"], labels["PVConsumption"], "line")
@@ -200,15 +201,11 @@ def executeFeasibilityAnalysistanzendeSiedlung(
 
     # calc the autocorrelations
     if _plotAutocorrelations:
-        calcAutocorrelation(allData["networkObtainanceQuarter"], None, labels["networkObtainanceQuarter"])
-        calcAutocorrelation(allData["networkFeedInQuarter"], None, labels["networkFeedInQuarter"])
-        calcAutocorrelation(allData["PVConsumption"], None, labels["PVConsumption"])
-        calcAutocorrelation(allData["PVFeedIn"], None, labels["PVFeedIn"])
-
-        calcAutocorrelation(threeDayData["networkObtainanceQuarter"], None, labels["networkObtainanceQuarter"])
-        calcAutocorrelation(threeDayData["networkFeedInQuarter"], None, labels["networkFeedInQuarter"])
-        calcAutocorrelation(threeDayData["PVConsumption"], None, labels["PVConsumption"])
-        calcAutocorrelation(threeDayData["PVFeedIn"], None, labels["PVFeedIn"])
+        IndicesOfValesToPlot = np.array((0, 500))
+        calcAutocorrelation(allData["networkObtainanceQuarter"], None, labels["networkObtainanceQuarter"], IndicesOfValesToPlot)
+        calcAutocorrelation(allData["networkFeedInQuarter"], None, labels["networkFeedInQuarter"], IndicesOfValesToPlot)
+        calcAutocorrelation(allData["PVConsumption"], None, labels["PVConsumption"], IndicesOfValesToPlot)
+        calcAutocorrelation(allData["PVFeedIn"], None, labels["PVFeedIn"], IndicesOfValesToPlot)
 
     # calc the difference values
     if _plotDifferenceValues:
