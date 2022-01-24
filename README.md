@@ -5,8 +5,8 @@ load data from csv files and add information on candidate values like the weathe
 
 order of the appended data in the np array:
 - (values from the csv files)
-- time
-- dayOfWeek
+- time (as seconds since midnight of that day)
+- dayOfWeek (as vector, e.g. monday = [1,0,0,0,0,0,0])
 - isWeekend
 - weekNumber
 - isHoliday (Feiertag)

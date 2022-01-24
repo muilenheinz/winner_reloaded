@@ -3,12 +3,13 @@ import numpy as np
 from datetime import datetime
 import requests
 from datetimerange import DateTimeRange
-from datetime import date
+from datetime import date, datetime, timedelta, time
 import csv
 import urllib.request
 import zipfile
 import time
 import re
+import datetime as dt
 
 weatherStationId = None
 
@@ -62,10 +63,17 @@ def convertTimestampToDateInformation(data: np.array):
     for line in data:
         timestamp = float(line[0])
 
-        # get the time
+        # get the time as timestamp from midnight
         datetimeValue = datetime.fromtimestamp(timestamp / 1000)
-        time = datetimeValue.strftime("%H:%M:%S")
-        line[-4] = time
+
+        hourVal = int(datetimeValue.strftime('%H'))
+        minuteVal = int(datetimeValue.strftime('%M'))
+        secondVal = int(datetimeValue.strftime('%S'))
+        timeValue = dt.time(hourVal, minuteVal, secondVal)
+
+        td = datetime.combine(datetime.min, timeValue) - datetime.min
+        midnightTimestamp = td // timedelta(seconds=1)
+        line[-4] = midnightTimestamp
 
         # get the day of week as index, where Monday = 0 and Sunday = 6
         dayOfWeek = datetimeValue.weekday()
