@@ -376,3 +376,19 @@ def prepareData(_path, _weatherStationId, _withTimestamp, _csvSeparator, _header
     else:
         return deleteColFromNpArray(dataCleaned, 0)
 
+
+def calcOverallEnergyConsuption(data: np.array):
+    data = addNewColToNpArray(data)
+
+    def calcConsumption (line):
+        LG_wirk_plus_trafo = line[13]
+        LG_wirk_minus_trafo = line[16]
+        LG_wirk_plus_pv = line[19]
+        LG_wirk_minus_pv = line[22]
+        overall = float(LG_wirk_plus_trafo) - float(LG_wirk_minus_trafo) + float(LG_wirk_plus_pv) + float(LG_wirk_minus_pv)
+        line[-1] = overall
+
+    for line in data:
+        calcConsumption(line)
+
+    return data

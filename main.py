@@ -18,6 +18,8 @@ def calcTanzendeSiedlung():
     print("######################## calculations for tanzende Siedlung #######################")
     tanzendeSiedlungData = prepareData('../data/TAS/inetz/', weatherStationIdChemnitz, True, ";", 2)
 
+    tanzendeSiedlungData = calcOverallEnergyConsuption(tanzendeSiedlungData)
+
     # remove cols for blinddata, Unit and state from the data
     removeCols = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 17, 18, 20, 21, 23, 24]
     removeCols.reverse()
@@ -26,6 +28,6 @@ def calcTanzendeSiedlung():
 
     executeFeasibilityAnalysistanzendeSiedlung(tanzendeSiedlungData, True, True, True, True, "green")
 
-calcAlfonsPechStrasse()
+# calcAlfonsPechStrasse()
 calcTanzendeSiedlung()
 

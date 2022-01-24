@@ -78,17 +78,20 @@ def calcAutocorrelation(dataY: np.array, dataX: np.array, _chartLabel=None):
         _chartLabel = "normalisierte Autokorrelation"
     else:
         _chartLabel = "normalisierte Autokorrelation " + _chartLabel
+
     plotTimeSeries(normalizedResult, dataX, _chartLabel, "line")
 
 # for the 1D-np.array dataY calcs the deviation of a value from its predecessor
 def calcDifferenceSeries(dataY: np.array, dataX: np.array, _label = ""):
     result = np.diff(dataY)
     label = "Differenzdaten " + _label
-    plotTimeSeries(result, dataX[:-1], label)
+    plotTimeSeries(result, dataX[:-1], label, "line")
 
 # calculate the kendalCoefficient, comparing the production data to every other column in the given np.array
 # @_compareWithColIndex: index of the column, the Kendall coefficients shall be calculated for
-def calcKendallCoefficients(data: np.array, _compareWithColIndex = 0, _label = "", _colnames = np.empty((0, 0))):
+# @_preColnames: names of columns to be added before the calculated cols like time, weekday etc.
+# @_postColnames: names of columns to be added after the calculated cols like time, weekday etc.
+def calcKendallCoefficients(data: np.array, _compareWithColIndex = 0, _label = "", _preColnames = np.empty((0, 0)), _postColnames = np.empty((0, 0))):
     productionData = data[:,_compareWithColIndex]
     kendallCoefficients = np.zeros(shape=data.shape[1] - 1)
 
@@ -114,7 +117,9 @@ def calcKendallCoefficients(data: np.array, _compareWithColIndex = 0, _label = "
         "Summe der Niederschlagsh. der vorangeg.10Min (RWS_10)",
         "Niederschlagsindikator  10min (RWS_IND_10)"
      ))
-    colNames = np.append(_colnames, addedColNames)
+    colNames = np.append(_preColnames, addedColNames)
+    colNames = np.append(colNames, _postColnames)
+    print(colNames)
 
     label = "Kendall Rank Korrelationen " + _label
 
@@ -183,10 +188,10 @@ def executeFeasibilityAnalysistanzendeSiedlung(
 
     # plot time series of the plain data
     if _plotPlainTimeSeries:
-        plotTimeSeries(threeDayData["networkObtainanceQuarter"], threeDayData["timestamp"], labels["networkObtainanceQuarter"])
-        plotTimeSeries(threeDayData["networkFeedInQuarter"], threeDayData["timestamp"], labels["networkFeedInQuarter"])
-        plotTimeSeries(threeDayData["PVConsumption"], threeDayData["timestamp"], labels["PVConsumption"])
-        plotTimeSeries(threeDayData["PVFeedIn"], threeDayData["timestamp"], labels["PVFeedIn"])
+        # plotTimeSeries(threeDayData["networkObtainanceQuarter"], threeDayData["timestamp"], labels["networkObtainanceQuarter"])
+        # plotTimeSeries(threeDayData["networkFeedInQuarter"], threeDayData["timestamp"], labels["networkFeedInQuarter"])
+        # plotTimeSeries(threeDayData["PVConsumption"], threeDayData["timestamp"], labels["PVConsumption"])
+        # plotTimeSeries(threeDayData["PVFeedIn"], threeDayData["timestamp"], labels["PVFeedIn"])
 
         plotTimeSeries(allData["networkObtainanceQuarter"], allData["timestamp"], labels["networkObtainanceQuarter"], "line")
         plotTimeSeries(allData["networkFeedInQuarter"], allData["timestamp"], labels["networkFeedInQuarter"], "line")
@@ -200,6 +205,11 @@ def executeFeasibilityAnalysistanzendeSiedlung(
         calcAutocorrelation(allData["PVConsumption"], None, labels["PVConsumption"])
         calcAutocorrelation(allData["PVFeedIn"], None, labels["PVFeedIn"])
 
+        calcAutocorrelation(threeDayData["networkObtainanceQuarter"], None, labels["networkObtainanceQuarter"])
+        calcAutocorrelation(threeDayData["networkFeedInQuarter"], None, labels["networkFeedInQuarter"])
+        calcAutocorrelation(threeDayData["PVConsumption"], None, labels["PVConsumption"])
+        calcAutocorrelation(threeDayData["PVFeedIn"], None, labels["PVFeedIn"])
+
     # calc the difference values
     if _plotDifferenceValues:
         calcDifferenceSeries(allData["networkObtainanceQuarter"], allData["timestamp"], labels["networkObtainanceQuarter"])
@@ -212,7 +222,7 @@ def executeFeasibilityAnalysistanzendeSiedlung(
         dataWithoutTimestamp = deleteColFromNpArray(_data, 0)
         colnames = np.array(("networkObtainanceQuarter", "networkFeedInQuarter", "PVConsumption", "PVFeedIn"))
 
-        calcKendallCoefficients(dataWithoutTimestamp, 1, labels["networkObtainanceQuarter"], colnames)
-        calcKendallCoefficients(dataWithoutTimestamp, 2, labels["networkFeedInQuarter"], colnames)
-        calcKendallCoefficients(dataWithoutTimestamp, 3, labels["PVConsumption"], colnames)
-        calcKendallCoefficients(dataWithoutTimestamp, 4, labels["PVFeedIn"], colnames)
+        calcKendallCoefficients(dataWithoutTimestamp, 1, labels["networkObtainanceQuarter"], colnames, np.array(("consumption")))
+        calcKendallCoefficients(dataWithoutTimestamp, 2, labels["networkFeedInQuarter"], colnames, np.array(("consumption")))
+        calcKendallCoefficients(dataWithoutTimestamp, 3, labels["PVConsumption"], colnames, np.array(("consumption")))
+        calcKendallCoefficients(dataWithoutTimestamp, 4, labels["PVFeedIn"], colnames, np.array(("consumption")))
