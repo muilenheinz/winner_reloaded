@@ -10,8 +10,15 @@ plotColor = "blue"
 # plot the dataY over the given dataX. If no dataX is given the axis is mocked as integer values with step 1
 # @_label: describes the series, will be printed on the chart
 # @_type: charttype, options are scatter (single dots), line and bar
-def plotTimeSeries(dataY, dataX=None, _label="timeseries", _type="scatter"):
+def plotTimeSeries(dataY, dataX=None, _label="timeseries", _type="scatter", _indicesOfValesToPlot=None):
     global plotColor
+
+    # cut the axis to show only the requested area of the data
+    if _indicesOfValesToPlot is not None:
+        dataY = dataY[_indicesOfValesToPlot[0]:_indicesOfValesToPlot[1]]
+        if dataX is not None:
+            dataX = dataX[_indicesOfValesToPlot[0]:_indicesOfValesToPlot[1]]
+
     isTimestampXAxis = checkIsTimestampArray(dataX)
 
     if isTimestampXAxis:
@@ -43,7 +50,10 @@ def plotTimeSeries(dataY, dataX=None, _label="timeseries", _type="scatter"):
 
     # format timestamp values on the xAxis
     if isTimestampXAxis:
-        dtFmt = md.DateFormatter('%d/%m/%Y')
+        if dataX.size < 300:
+            dtFmt = md.DateFormatter('%d/%m/%Y - %H:%M')
+        else:
+            dtFmt = md.DateFormatter('%d/%m/%Y')
         plt.gca().xaxis.set_major_formatter(dtFmt)
         plt.xticks(rotation=15, ha="right")
 
@@ -88,7 +98,11 @@ def calcAutocorrelation(dataY: np.array, dataX: np.array, _chartLabel=None, _ind
     plotTimeSeries(normalizedResult, dataX, _chartLabel, "line")
 
 # for the 1D-np.array dataY calcs the deviation of a value from its predecessor
-def calcDifferenceSeries(dataY: np.array, dataX: np.array, _label = ""):
+def calcDifferenceSeries(dataY: np.array, dataX: np.array, _label = "", _indicesOfValesToPlot=None):
+    if _indicesOfValesToPlot is not None:
+        dataY = dataY[_indicesOfValesToPlot[0]:_indicesOfValesToPlot[1]]
+        dataX = dataX[_indicesOfValesToPlot[0]:_indicesOfValesToPlot[1]]
+
     result = np.diff(dataY)
     label = "Differenzdaten " + _label
     plotTimeSeries(result, dataX[:-1], label, "line")
@@ -181,38 +195,39 @@ def executeFeasibilityAnalysistanzendeSiedlung(
     threeDayData["timestamp"] = np.array(_data[:96,0], dtype=float)
     threeDayData["networkFeedInQuarter"] = np.array(_data[:96,1], dtype=float)
     threeDayData["networkObtainanceQuarter"] = np.array(_data[:96,2], dtype=float)
-    threeDayData["PVConsumption"] = np.array(_data[:96,3], dtype=float)
-    threeDayData["PVFeedIn"] = np.array(_data[:96,4], dtype=float)
+    threeDayData["PVConsumption"] = np.array(_data[:96,4], dtype=float)
+    threeDayData["PVFeedIn"] = np.array(_data[:96,3], dtype=float)
 
     # all available data
     allData = {}
     allData["timestamp"] = np.array(_data[:,0], dtype=float)
     allData["networkFeedInQuarter"] = np.array(_data[:,1], dtype=float)
     allData["networkObtainanceQuarter"] = np.array(_data[:,2], dtype=float)
-    allData["PVConsumption"] = np.array(_data[:,3], dtype=float)
-    allData["PVFeedIn"] = np.array(_data[:,4], dtype=float)
+    allData["PVConsumption"] = np.array(_data[:,4], dtype=float)
+    allData["PVFeedIn"] = np.array(_data[:,3], dtype=float)
+
+    indicesOfValesToPlot = np.array((17472, 17568))
 
     # plot time series of the plain data
     if _plotPlainTimeSeries:
-        plotTimeSeries(allData["networkObtainanceQuarter"], allData["timestamp"], labels["networkObtainanceQuarter"], "line")
-        plotTimeSeries(allData["networkFeedInQuarter"], allData["timestamp"], labels["networkFeedInQuarter"], "line")
-        plotTimeSeries(allData["PVConsumption"], allData["timestamp"], labels["PVConsumption"], "line")
-        plotTimeSeries(allData["PVFeedIn"], allData["timestamp"], labels["PVFeedIn"], "line")
+        plotTimeSeries(allData["networkObtainanceQuarter"], allData["timestamp"], labels["networkObtainanceQuarter"], "line", indicesOfValesToPlot)
+        plotTimeSeries(allData["networkFeedInQuarter"], allData["timestamp"], labels["networkFeedInQuarter"], "line", indicesOfValesToPlot)
+        plotTimeSeries(allData["PVConsumption"], allData["timestamp"], labels["PVConsumption"], "line", indicesOfValesToPlot)
+        plotTimeSeries(allData["PVFeedIn"], allData["timestamp"], labels["PVFeedIn"], "line", indicesOfValesToPlot)
 
     # calc the autocorrelations
     if _plotAutocorrelations:
-        IndicesOfValesToPlot = np.array((0, 500))
-        calcAutocorrelation(allData["networkObtainanceQuarter"], None, labels["networkObtainanceQuarter"], IndicesOfValesToPlot)
-        calcAutocorrelation(allData["networkFeedInQuarter"], None, labels["networkFeedInQuarter"], IndicesOfValesToPlot)
-        calcAutocorrelation(allData["PVConsumption"], None, labels["PVConsumption"], IndicesOfValesToPlot)
-        calcAutocorrelation(allData["PVFeedIn"], None, labels["PVFeedIn"], IndicesOfValesToPlot)
+        calcAutocorrelation(allData["networkObtainanceQuarter"], None, labels["networkObtainanceQuarter"], indicesOfValesToPlot)
+        calcAutocorrelation(allData["networkFeedInQuarter"], None, labels["networkFeedInQuarter"], indicesOfValesToPlot)
+        calcAutocorrelation(allData["PVConsumption"], None, labels["PVConsumption"], indicesOfValesToPlot)
+        calcAutocorrelation(allData["PVFeedIn"], None, labels["PVFeedIn"], indicesOfValesToPlot)
 
     # calc the difference values
     if _plotDifferenceValues:
-        calcDifferenceSeries(allData["networkObtainanceQuarter"], allData["timestamp"], labels["networkObtainanceQuarter"])
-        calcDifferenceSeries(allData["networkFeedInQuarter"], allData["timestamp"], labels["networkFeedInQuarter"])
-        calcDifferenceSeries(allData["PVConsumption"], allData["timestamp"], labels["PVConsumption"])
-        calcDifferenceSeries(allData["PVFeedIn"], allData["timestamp"], labels["PVFeedIn"])
+        calcDifferenceSeries(allData["networkObtainanceQuarter"], allData["timestamp"], labels["networkObtainanceQuarter"], indicesOfValesToPlot)
+        calcDifferenceSeries(allData["networkFeedInQuarter"], allData["timestamp"], labels["networkFeedInQuarter"], indicesOfValesToPlot)
+        calcDifferenceSeries(allData["PVConsumption"], allData["timestamp"], labels["PVConsumption"], indicesOfValesToPlot)
+        calcDifferenceSeries(allData["PVFeedIn"], allData["timestamp"], labels["PVFeedIn"], indicesOfValesToPlot)
 
     # plot the Kendall coefficients for every col of the data
     if _plotKendalCoefficients:
