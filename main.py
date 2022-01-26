@@ -11,6 +11,8 @@ weatherStationIdJena = "02444"      # wheatherstationID Jena Sternwarte
 def calcAlfonsPechStrasse():
     print("######################## calculations for Alfons-Pech-Strasse #######################")
     alfonsPechStrData = prepareData('../data/PV/APS_PV/', weatherStationIdChemnitz, True, ",", 1)
+    alfonsPechStrData = dataCleaningAlfonsPechStrasse(alfonsPechStrData)
+
     executeFeasibilityAnalysisalfonsPechStr(alfonsPechStrData, "red")
 
 # chak and prepare Data for tanzende Siedlung, Chemnitz
@@ -28,6 +30,6 @@ def calcTanzendeSiedlung():
 
     executeFeasibilityAnalysistanzendeSiedlung(tanzendeSiedlungData, True, False, False, False, "green")
 
-# calcAlfonsPechStrasse()
-calcTanzendeSiedlung()
+calcAlfonsPechStrasse()
+# calcTanzendeSiedlung()
 

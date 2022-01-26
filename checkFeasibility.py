@@ -32,7 +32,7 @@ def plotTimeSeries(dataY, dataX=None, _label="timeseries", _type="scatter", _ind
         # convert timestamp axis to datetime axis
         datetimeXAxis = np.empty(dataX.shape, dtype='datetime64[s]')
         for key in range(dataX.shape[0]):
-            # convert timestamp in microsenconds to ts in seconds and then to datetime object
+            # convert timestamp in microsenconds to ts in seconds
             datetimeXAxis[key] = datetime.fromtimestamp(dataX[key] / 1000)
         dataX = datetimeXAxis
 
@@ -150,8 +150,8 @@ def executeFeasibilityAnalysisalfonsPechStr(_data: np.array, _color):
     plotColor = _color
 
     # the first three days
-    threeDaysTimestampData = np.array(_data[:4320,0], dtype=float)
-    threeDaysMeasuremntData = np.array(_data[:4320,1], dtype=float)
+    threeDaysTimestampData = np.array(_data[:4044,0], dtype=float)  # 4169 = 4320 () 3 days - 151 values missing for the first day
+    threeDaysMeasuremntData = np.array(_data[:4044,1], dtype=float)
     # all available data
     allDaysTimestampData = np.array(_data[:,0], dtype=float)
     allDaysMeasurementData = np.array(_data[:,1], dtype=float)
