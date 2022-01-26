@@ -237,7 +237,7 @@ def executeFeasibilityAnalysistanzendeSiedlung(
     # plot the Kendall coefficients for every col of the data
     if _plotKendalCoefficients:
         dataWithoutTimestamp = deleteColFromNpArray(_data, 0)
-        colnames = np.array((labels["networkObtainanceQuarter"], labels["networkFeedInQuarter"], labels["PVConsumption"], labels["PVFeedIn"]))
+        colnames = np.array((labels["networkObtainanceQuarter"], labels["networkFeedInQuarter"], labels["PVFeedIn"], labels["PVConsumption"]))
 
         calcKendallCoefficients(dataWithoutTimestamp, 1, labels["networkObtainanceQuarter"], colnames, np.array(("Verbrauch")))
         calcKendallCoefficients(dataWithoutTimestamp, 2, labels["networkFeedInQuarter"], colnames, np.array(("Verbrauch")))

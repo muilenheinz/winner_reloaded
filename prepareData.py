@@ -63,17 +63,20 @@ def convertTimestampToDateInformation(data: np.array):
     for line in data:
         timestamp = float(line[0])
 
-        # get the time as timestamp from midnight
         datetimeValue = datetime.fromtimestamp(timestamp / 1000)
 
+        # get the time as midnight-timestamp (seconds elapsed since midnight)
         hourVal = int(datetimeValue.strftime('%H'))
         minuteVal = int(datetimeValue.strftime('%M'))
         secondVal = int(datetimeValue.strftime('%S'))
         timeValue = dt.time(hourVal, minuteVal, secondVal)
-
         td = datetime.combine(datetime.min, timeValue) - datetime.min
         midnightTimestamp = td // timedelta(seconds=1)
-        line[-4] = midnightTimestamp
+
+        # clip the "midnight-timestamp" to 0-1
+        clippedMidnightTimestamp = midnightTimestamp / 86400
+
+        line[-4] = clippedMidnightTimestamp
 
         # get the day of week as index, where Monday = 0 and Sunday = 6
         dayOfWeek = datetimeValue.weekday()
