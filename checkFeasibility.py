@@ -10,7 +10,7 @@ plotColor = "blue"
 # plot the dataY over the given dataX. If no dataX is given the axis is mocked as integer values with step 1
 # @_label: describes the series, will be printed on the chart
 # @_type: charttype, options are scatter (single dots), line and bar
-def plotTimeSeries(dataY, dataX=None, _label="timeseries", _type="scatter", _indicesOfValesToPlot=None):
+def plotTimeSeries(dataY, dataX=None, _label="timeseries", _type="scatter", _indicesOfValesToPlot=None, _yAxisLabel=None):
     global plotColor
 
     # cut the axis to show only the requested area of the data
@@ -50,13 +50,13 @@ def plotTimeSeries(dataY, dataX=None, _label="timeseries", _type="scatter", _ind
 
     # format timestamp values on the xAxis
     if isTimestampXAxis:
-        if dataX.size < 300:
-            dtFmt = md.DateFormatter('%d/%m/%Y - %H:%M')
-        else:
-            dtFmt = md.DateFormatter('%d/%m/%Y')
+        dtFmt = md.DateFormatter('%d/%m/%Y \n %H:%M')
         plt.gca().xaxis.set_major_formatter(dtFmt)
-        plt.xticks(rotation=15, ha="right")
+        plt.xticks(rotation=45, ha="right")
 
+    if _yAxisLabel is not None:
+        plt.ylabel(_yAxisLabel)
+    plt.tight_layout()
     plt.legend(loc='upper right')
     plt.show()
 
@@ -123,23 +123,22 @@ def calcKendallCoefficients(data: np.array, _compareWithColIndex = 0, _label = "
             kendallCoefficients[i - 1] = corr
 
     addedColNames = np.array((
-        "time",
-        "dayOfWeek",
-        "isWeekend",
-        "weekNumber",
-        "isHoliday (Feiertag)",
-        "isSchoolHoliday",
-        "diffuse Himmelstrahlung 10min (DS_10)",
-        "globalstrahlung joule (GS_10)",
-        "sonnenscheindauer (SD_10)",
-        "Langwellige Strahlung (LS_10)",
-        "Niederschlagsdauer 10min (RWS_DAU_10)",
-        "Summe der Niederschlagsh. der vorangeg.10Min (RWS_10)",
-        "Niederschlagsindikator  10min (RWS_IND_10)"
+        "Zeit",
+        "Tag der Woche",
+        "Wochenende",
+        "Wochennummer",
+        "Feiertag",
+        "Schulferien",
+        "DS_10", # diffuse Himmelstrahlung 10min
+        "GS_10", #globalstrahlung joule
+        "SD_10", #sonnenscheindauer
+        "LS_10",# Langwellige Strahlung
+        "RWS_DAU_10", #Niederschlagsdauer 10min
+        "RWS_10", #Summe der Niederschlagsh. der vorangeg.10Min
+        "RWS_IND_10" #Niederschlagsindikator  10min
      ))
     colNames = np.append(_preColnames, addedColNames)
     colNames = np.append(colNames, _postColnames)
-    print(colNames)
 
     label = "Kendall Rank Korrelationen " + _label
 
@@ -158,8 +157,8 @@ def executeFeasibilityAnalysisalfonsPechStr(_data: np.array, _color):
     allDaysMeasurementData = np.array(_data[:,1], dtype=float)
 
     # draw the plain production data
-    plotTimeSeries(threeDaysMeasuremntData, threeDaysTimestampData, "production data")
-    plotTimeSeries(allDaysMeasurementData, allDaysTimestampData, "production data")
+    plotTimeSeries(threeDaysMeasuremntData, threeDaysTimestampData, "Produktionsdaten")
+    plotTimeSeries(allDaysMeasurementData, allDaysTimestampData, "Produktionsdaten")
 
     # check the autocorrelations
     calcAutocorrelation(threeDaysMeasuremntData, None)
@@ -187,7 +186,8 @@ def executeFeasibilityAnalysistanzendeSiedlung(
         "networkObtainanceQuarter": "Netzbezug Quartier",
         "networkFeedInQuarter": "Netzeinspeisung Quartier",
         "PVConsumption": "Bezug PV-Analge",
-        "PVFeedIn": "PV-Einspeisung Quartier"
+        "PVFeedIn": "PV-Einspeisung Quartier",
+        "overallConsumption": "Gesamtverbrauch"
     }
 
     # the first three days
@@ -197,6 +197,7 @@ def executeFeasibilityAnalysistanzendeSiedlung(
     threeDayData["networkObtainanceQuarter"] = np.array(_data[:96,2], dtype=float)
     threeDayData["PVConsumption"] = np.array(_data[:96,4], dtype=float)
     threeDayData["PVFeedIn"] = np.array(_data[:96,3], dtype=float)
+    threeDayData["overallConsumption"] = np.array(_data[:96,-1], dtype=float)
 
     # all available data
     allData = {}
@@ -205,15 +206,18 @@ def executeFeasibilityAnalysistanzendeSiedlung(
     allData["networkObtainanceQuarter"] = np.array(_data[:,2], dtype=float)
     allData["PVConsumption"] = np.array(_data[:,4], dtype=float)
     allData["PVFeedIn"] = np.array(_data[:,3], dtype=float)
+    allData["overallConsumption"] = np.array(_data[:,-1], dtype=float)
 
     indicesOfValesToPlot = np.array((17472, 17568))
 
     # plot time series of the plain data
     if _plotPlainTimeSeries:
-        plotTimeSeries(allData["networkObtainanceQuarter"], allData["timestamp"], labels["networkObtainanceQuarter"], "line", indicesOfValesToPlot)
-        plotTimeSeries(allData["networkFeedInQuarter"], allData["timestamp"], labels["networkFeedInQuarter"], "line", indicesOfValesToPlot)
-        plotTimeSeries(allData["PVConsumption"], allData["timestamp"], labels["PVConsumption"], "line", indicesOfValesToPlot)
-        plotTimeSeries(allData["PVFeedIn"], allData["timestamp"], labels["PVFeedIn"], "line", indicesOfValesToPlot)
+        yAxisUnit = "kWh"
+        plotTimeSeries(allData["networkObtainanceQuarter"], allData["timestamp"], labels["networkObtainanceQuarter"], "line", indicesOfValesToPlot, yAxisUnit)
+        plotTimeSeries(allData["networkFeedInQuarter"], allData["timestamp"], labels["networkFeedInQuarter"], "line", indicesOfValesToPlot, yAxisUnit)
+        plotTimeSeries(allData["PVConsumption"], allData["timestamp"], labels["PVConsumption"], "line", indicesOfValesToPlot, yAxisUnit)
+        plotTimeSeries(allData["PVFeedIn"], allData["timestamp"], labels["PVFeedIn"], "line", indicesOfValesToPlot, yAxisUnit)
+        plotTimeSeries(allData["overallConsumption"], allData["timestamp"], labels["overallConsumption"], "line", indicesOfValesToPlot, yAxisUnit)
 
     # calc the autocorrelations
     if _plotAutocorrelations:
@@ -232,9 +236,9 @@ def executeFeasibilityAnalysistanzendeSiedlung(
     # plot the Kendall coefficients for every col of the data
     if _plotKendalCoefficients:
         dataWithoutTimestamp = deleteColFromNpArray(_data, 0)
-        colnames = np.array(("networkObtainanceQuarter", "networkFeedInQuarter", "PVConsumption", "PVFeedIn"))
+        colnames = np.array((labels["networkObtainanceQuarter"], labels["networkFeedInQuarter"], labels["PVConsumption"], labels["PVFeedIn"]))
 
-        calcKendallCoefficients(dataWithoutTimestamp, 1, labels["networkObtainanceQuarter"], colnames, np.array(("consumption")))
-        calcKendallCoefficients(dataWithoutTimestamp, 2, labels["networkFeedInQuarter"], colnames, np.array(("consumption")))
-        calcKendallCoefficients(dataWithoutTimestamp, 3, labels["PVConsumption"], colnames, np.array(("consumption")))
-        calcKendallCoefficients(dataWithoutTimestamp, 4, labels["PVFeedIn"], colnames, np.array(("consumption")))
+        calcKendallCoefficients(dataWithoutTimestamp, 1, labels["networkObtainanceQuarter"], colnames, np.array(("Verbrauch")))
+        calcKendallCoefficients(dataWithoutTimestamp, 2, labels["networkFeedInQuarter"], colnames, np.array(("Verbrauch")))
+        calcKendallCoefficients(dataWithoutTimestamp, 3, labels["PVConsumption"], colnames, np.array(("Verbrauch")))
+        calcKendallCoefficients(dataWithoutTimestamp, 4, labels["PVFeedIn"], colnames, np.array(("Verbrauch")))

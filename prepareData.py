@@ -392,3 +392,21 @@ def calcOverallEnergyConsuption(data: np.array):
         calcConsumption(line)
 
     return data
+
+def dataCleaningAlfonsPechStrasse(_data: np.array):
+    dropindices = []
+    for index, row in enumerate(_data):
+        # filter unrealistic production data
+        if float(row[1]) > 1.0:
+            dropindices.append(index)
+
+    dropindices.reverse()
+    for index in dropindices:
+        _data = np.delete(_data, index, axis=0)
+
+    return _data
+
+
+
+
+
