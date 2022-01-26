@@ -43,8 +43,9 @@ def plotTimeSeries(dataY, dataX=None, _label="timeseries", _type="scatter", _ind
     if _type == "scatter":
         plt.scatter(dataX, dataY, marker=".", label=_label, color=plotColor)
     elif _type == "bar":
-        plt.bar(dataX, dataY, label=_label, color=plotColor)
+        chart = plt.bar(dataX, dataY, label=_label, color=plotColor)
         plt.xticks(rotation=45, ha="right")
+        plt.bar_label(chart, fmt="%.2f")
     elif _type == "line":
         plt.plot(dataX, dataY, label=_label, color=plotColor)
 
