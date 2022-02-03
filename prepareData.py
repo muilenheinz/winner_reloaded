@@ -73,10 +73,14 @@ def convertTimestampToDateInformation(data: np.array):
         td = datetime.combine(datetime.min, timeValue) - datetime.min
         midnightTimestamp = td // timedelta(seconds=1)
 
-        # clip the "midnight-timestamp" to 0-1
+        # # clip the "midnight-timestamp" to 0-1
         clippedMidnightTimestamp = midnightTimestamp / 86400
 
-        line[-4] = clippedMidnightTimestamp
+        seconds_in_day = 24*60*60
+        cosine_time = np.cos(2*np.pi*midnightTimestamp/seconds_in_day)
+
+        # store the time value in the dataframe
+        line[-4] = cosine_time
 
         # get the day of week as index, where Monday = 0 and Sunday = 6
         dayOfWeek = datetimeValue.weekday()
@@ -204,14 +208,16 @@ def downloadDWDWeatherData(_year, _type, _mode="historical"):
     url = "https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/10_minutes/{type}/".format(type = _type)
     if current_year != _year and _mode == "historical":
         url += "historical/"
-        foldername = "10minutenwerte_{type}_{weatherstation_id}_{year}0101_{year}1231_hist.zip"
-        foldername = foldername.format(weatherstation_id = weatherStationId, year = _year, type=internalType)
+        next_year = _year + 1
+        foldername = "10minutenwerte_{type}_{weatherstation_id}_{year}0101_{next_year}1231_hist.zip"
+        foldername = foldername.format(weatherstation_id = weatherStationId, year = _year, type=internalType, next_year = next_year)
     else:
         url += "recent/"
         foldername = "10minutenwerte_{type}_{station}_akt.zip".format(station = weatherStationId, type=internalType)
 
     weatherdata = downloadAndUnzipContent(url + foldername)
     if weatherdata == False:
+        print("not found, retry with recent data")
         return downloadDWDWeatherData(_year, _type, "recent")
 
     return weatherdata
@@ -305,22 +311,27 @@ def setSolarDataToRow(solarWeatherdata, roundedDate, line):
 
 # helper function for addWeatherdata; saves the given precipitationWeatherdata to the given row
 def setprecipitationDataToRow(precipitationWeatherdata, roundedDate, line):
-    RWS_DAU_10 = precipitationWeatherdata[roundedDate][3] # Niederschlagsdauer 10min
-    if RWS_DAU_10 != -999:
-        line[-3] = RWS_DAU_10
+    if roundedDate in precipitationWeatherdata:
+        RWS_DAU_10 = precipitationWeatherdata[roundedDate][3] # Niederschlagsdauer 10min
+        if RWS_DAU_10 != -999:
+            line[-3] = RWS_DAU_10
+        else:
+            line[-3] = 0
+
+        RWS_10 = precipitationWeatherdata[roundedDate][4] # Summe der Niederschlagsh. der vorangeg.10Min
+        if RWS_10 != -999:
+            line[-2] = RWS_10
+        else:
+            line[-2] = 0
+
+        RWS_IND_10 = precipitationWeatherdata[roundedDate][5] # Niederschlagsindikator  10min
+        if RWS_IND_10 != -999:
+            line[-1] = RWS_IND_10
+        else:
+            line[-1] = 0
     else:
         line[-3] = 0
-
-    RWS_10 = precipitationWeatherdata[roundedDate][4] # Summe der Niederschlagsh. der vorangeg.10Min
-    if RWS_10 != -999:
-        line[-2] = RWS_10
-    else:
         line[-2] = 0
-
-    RWS_IND_10 = precipitationWeatherdata[roundedDate][5] # Niederschlagsindikator  10min
-    if RWS_IND_10 != -999:
-        line[-1] = RWS_IND_10
-    else:
         line[-1] = 0
 
 # adds a column of zeroes to the input np.array
@@ -387,8 +398,8 @@ def calcOverallEnergyConsuption(data: np.array):
         LG_wirk_plus_trafo = line[13]
         LG_wirk_minus_trafo = line[16]
         LG_wirk_plus_pv = line[19]
-        LG_wirk_minus_pv = line[22]
-        overall = float(LG_wirk_plus_trafo) - float(LG_wirk_minus_trafo) + float(LG_wirk_plus_pv) + float(LG_wirk_minus_pv)
+
+        overall = float(LG_wirk_plus_trafo) + float(LG_wirk_plus_pv) - float(LG_wirk_minus_trafo)
         line[-1] = overall
 
     for line in data:

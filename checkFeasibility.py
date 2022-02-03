@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 from scipy.stats import kendalltau
 import matplotlib.dates as md
+import pandas as pd
 
 plotColor = "blue"
 
@@ -43,9 +44,16 @@ def plotTimeSeries(dataY, dataX=None, _label="timeseries", _type="scatter", _ind
     if _type == "scatter":
         plt.scatter(dataX, dataY, marker=".", label=_label, color=plotColor)
     elif _type == "bar":
-        chart = plt.bar(dataX, dataY, label=_label, color=plotColor)
-        plt.xticks(rotation=45, ha="right")
-        plt.bar_label(chart, fmt="%.2f")
+        # sort the bars by absolute size
+        dataY = dataY.astype("float64")
+        mergedData = np.vstack((dataX, dataY)).T
+        mergedData = np.array(sorted(mergedData, key=lambda row: abs(float(row[1])), reverse=True))
+
+        dataY = np.array(mergedData[:,1].reshape(1, mergedData.shape[0]), dtype=("f8"))[0]
+        dataX = np.array(mergedData[:,0].reshape(1, mergedData.shape[0]))[0]
+
+        chart = plt.barh(dataX, dataY, label=_label, color=plotColor)
+        plt.bar_label(chart, fmt="%.2f", label_type="center")
     elif _type == "line":
         plt.plot(dataX, dataY, label=_label, color=plotColor)
 
@@ -116,15 +124,18 @@ def calcKendallCoefficients(data: np.array, _compareWithColIndex = 0, _label = "
     productionData = data[:,_compareWithColIndex]
     kendallCoefficients = np.zeros(shape=data.shape[1] - 1)
 
+    filteredData = np.delete(data, _compareWithColIndex, 1)
+
     # iterate all available candidate factors
-    for i in range(0, data.shape[1]):
-        if i != _compareWithColIndex:   # do not compare column  to itself
-            candidateData = data[:,i]
-            corr, _ = kendalltau(productionData, candidateData)
-            kendallCoefficients[i - 1] = corr
+    for i in range(0, filteredData.shape[1]):
+        candidateData = filteredData[:, i]
+        corr, _ = kendalltau(productionData, candidateData)
+        if pd.isna(corr):
+            corr = 0
+        kendallCoefficients[i] = corr
 
     addedColNames = np.array((
-        "Zeit",
+        "Zeit (cos)",
         "Tag der Woche",
         "Wochenende",
         "Wochennummer",
@@ -141,7 +152,10 @@ def calcKendallCoefficients(data: np.array, _compareWithColIndex = 0, _label = "
     colNames = np.append(_preColnames, addedColNames)
     colNames = np.append(colNames, _postColnames)
 
-    label = "Kendall Rank Korrelationen " + _label
+    # remove col to compare from names
+    colNames = np.delete(colNames, _compareWithColIndex)
+
+    label = "Kendall Ranks \n" + _label
 
     # plot coefficients as barchart
     plotTimeSeries(kendallCoefficients, colNames, label, "bar")
@@ -170,7 +184,7 @@ def executeFeasibilityAnalysisalfonsPechStr(_data: np.array, _color):
     calcDifferenceSeries(allDaysMeasurementData, allDaysTimestampData)
 
     dataWithoutTimestamp = deleteColFromNpArray(_data, 0)
-    calcKendallCoefficients(dataWithoutTimestamp) # from prepareData.py
+    calcKendallCoefficients(dataWithoutTimestamp, 0, "Erzeugung", np.array(("Erzeugung"))) # from prepareData.py
 
 def executeFeasibilityAnalysistanzendeSiedlung(
         _data: np.array,
@@ -184,10 +198,10 @@ def executeFeasibilityAnalysistanzendeSiedlung(
     plotColor = _color
 
     labels = {
-        "networkObtainanceQuarter": "Netzbezug Quartier",
-        "networkFeedInQuarter": "Netzeinspeisung Quartier",
+        "networkObtainanceQuarter": "Netzbezug",
+        "networkFeedInQuarter": "Netzeinspeisung",
         "PVConsumption": "Bezug PV-Analge",
-        "PVFeedIn": "PV-Einspeisung Quartier",
+        "PVFeedIn": "PV-Einspeisung",
         "overallConsumption": "Gesamtverbrauch"
     }
 
@@ -214,32 +228,37 @@ def executeFeasibilityAnalysistanzendeSiedlung(
     # plot time series of the plain data
     if _plotPlainTimeSeries:
         yAxisUnit = "kWh"
-        plotTimeSeries(allData["networkObtainanceQuarter"], allData["timestamp"], labels["networkObtainanceQuarter"], "line", indicesOfValesToPlot, yAxisUnit)
-        plotTimeSeries(allData["networkFeedInQuarter"], allData["timestamp"], labels["networkFeedInQuarter"], "line", indicesOfValesToPlot, yAxisUnit)
-        plotTimeSeries(allData["PVConsumption"], allData["timestamp"], labels["PVConsumption"], "line", indicesOfValesToPlot, yAxisUnit)
+        # plotTimeSeries(allData["networkObtainanceQuarter"], allData["timestamp"], labels["networkObtainanceQuarter"], "line", indicesOfValesToPlot, yAxisUnit)
+        # plotTimeSeries(allData["networkFeedInQuarter"], allData["timestamp"], labels["networkFeedInQuarter"], "line", indicesOfValesToPlot, yAxisUnit)
+        # plotTimeSeries(allData["PVConsumption"], allData["timestamp"], labels["PVConsumption"], "line", indicesOfValesToPlot, yAxisUnit)
         plotTimeSeries(allData["PVFeedIn"], allData["timestamp"], labels["PVFeedIn"], "line", indicesOfValesToPlot, yAxisUnit)
         plotTimeSeries(allData["overallConsumption"], allData["timestamp"], labels["overallConsumption"], "line", indicesOfValesToPlot, yAxisUnit)
 
     # calc the autocorrelations
     if _plotAutocorrelations:
-        calcAutocorrelation(allData["networkObtainanceQuarter"], None, labels["networkObtainanceQuarter"], indicesOfValesToPlot)
-        calcAutocorrelation(allData["networkFeedInQuarter"], None, labels["networkFeedInQuarter"], indicesOfValesToPlot)
-        calcAutocorrelation(allData["PVConsumption"], None, labels["PVConsumption"], indicesOfValesToPlot)
+        # calcAutocorrelation(allData["networkObtainanceQuarter"], None, labels["networkObtainanceQuarter"], indicesOfValesToPlot)
+        # calcAutocorrelation(allData["networkFeedInQuarter"], None, labels["networkFeedInQuarter"], indicesOfValesToPlot)
+        # calcAutocorrelation(allData["PVConsumption"], None, labels["PVConsumption"], indicesOfValesToPlot)
         calcAutocorrelation(allData["PVFeedIn"], None, labels["PVFeedIn"], indicesOfValesToPlot)
+        calcAutocorrelation(allData["overallConsumption"], None, labels["overallConsumption"], indicesOfValesToPlot)
+
 
     # calc the difference values
     if _plotDifferenceValues:
-        calcDifferenceSeries(allData["networkObtainanceQuarter"], allData["timestamp"], labels["networkObtainanceQuarter"], indicesOfValesToPlot)
-        calcDifferenceSeries(allData["networkFeedInQuarter"], allData["timestamp"], labels["networkFeedInQuarter"], indicesOfValesToPlot)
-        calcDifferenceSeries(allData["PVConsumption"], allData["timestamp"], labels["PVConsumption"], indicesOfValesToPlot)
+        # calcDifferenceSeries(allData["networkObtainanceQuarter"], allData["timestamp"], labels["networkObtainanceQuarter"], indicesOfValesToPlot)
+        # calcDifferenceSeries(allData["networkFeedInQuarter"], allData["timestamp"], labels["networkFeedInQuarter"], indicesOfValesToPlot)
+        # calcDifferenceSeries(allData["PVConsumption"], allData["timestamp"], labels["PVConsumption"], indicesOfValesToPlot)
         calcDifferenceSeries(allData["PVFeedIn"], allData["timestamp"], labels["PVFeedIn"], indicesOfValesToPlot)
+        calcDifferenceSeries(allData["overallConsumption"], allData["timestamp"], labels["overallConsumption"], indicesOfValesToPlot)
 
     # plot the Kendall coefficients for every col of the data
     if _plotKendalCoefficients:
         dataWithoutTimestamp = deleteColFromNpArray(_data, 0)
         colnames = np.array((labels["networkObtainanceQuarter"], labels["networkFeedInQuarter"], labels["PVFeedIn"], labels["PVConsumption"]))
+        postColNames = np.array(("Gesamtverbrauch"))
 
-        calcKendallCoefficients(dataWithoutTimestamp, 1, labels["networkObtainanceQuarter"], colnames, np.array(("Verbrauch")))
-        calcKendallCoefficients(dataWithoutTimestamp, 2, labels["networkFeedInQuarter"], colnames, np.array(("Verbrauch")))
-        calcKendallCoefficients(dataWithoutTimestamp, 3, labels["PVConsumption"], colnames, np.array(("Verbrauch")))
-        calcKendallCoefficients(dataWithoutTimestamp, 4, labels["PVFeedIn"], colnames, np.array(("Verbrauch")))
+        # calcKendallCoefficients(dataWithoutTimestamp, 1, labels["networkObtainanceQuarter"], colnames, np.array(("Verbrauch")))
+        # calcKendallCoefficients(dataWithoutTimestamp, 2, labels["networkFeedInQuarter"], colnames, np.array(("Verbrauch")))
+        # calcKendallCoefficients(dataWithoutTimestamp, 3, labels["PVConsumption"], colnames, np.array(("Verbrauch")))
+        calcKendallCoefficients(dataWithoutTimestamp, 2, labels["PVFeedIn"], colnames, postColNames)
+        calcKendallCoefficients(dataWithoutTimestamp, 17, labels["overallConsumption"], colnames, postColNames)
