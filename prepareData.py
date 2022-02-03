@@ -420,6 +420,37 @@ def dataCleaningAlfonsPechStrasse(_data: np.array):
 
     return _data
 
+# in 2021, tanzende siedlung was not fully occupied by January, but instead the tenants moved in over the year
+# so add the information, how many people lived there each month
+def addOccupanyNumbersTanzendeSiedlung(data: np.array):
+    data = addNewColToNpArray(data)
+
+    newContracts = {
+        "Jan": 9,
+        "Mar": 1,
+        "Apr": 1,
+        "May": 1,
+        "Sep": 28
+    }
+
+    oldMonth = None
+    numberOfContracts = 0
+
+    for row in data:
+        timestamp = float(row[0]) / 1000
+        datetimeValue = datetime.fromtimestamp(timestamp)
+        month = datetimeValue.strftime("%b")
+        year = datetimeValue.strftime("%Y")
+
+        # check if the month border was exceeded and if so if new contracts were signed that month
+        if int(year) == 2021 and oldMonth != month:
+            oldMonth = month
+            if month in newContracts:
+                numberOfContracts += newContracts[month]
+        row[-1] = numberOfContracts
+
+    return data
+
 
 
 

@@ -132,6 +132,7 @@ def calcKendallCoefficients(data: np.array, _compareWithColIndex = 0, _label = "
         corr, _ = kendalltau(productionData, candidateData)
         if pd.isna(corr):
             corr = 0
+            print("got nan Kendall for index ", i)
         kendallCoefficients[i] = corr
 
     addedColNames = np.array((
@@ -255,7 +256,7 @@ def executeFeasibilityAnalysistanzendeSiedlung(
     if _plotKendalCoefficients:
         dataWithoutTimestamp = deleteColFromNpArray(_data, 0)
         colnames = np.array((labels["networkObtainanceQuarter"], labels["networkFeedInQuarter"], labels["PVFeedIn"], labels["PVConsumption"]))
-        postColNames = np.array(("Gesamtverbrauch"))
+        postColNames = np.array(("Gesamtverbrauch", "Mieteranzahl"))
 
         # calcKendallCoefficients(dataWithoutTimestamp, 1, labels["networkObtainanceQuarter"], colnames, np.array(("Verbrauch")))
         # calcKendallCoefficients(dataWithoutTimestamp, 2, labels["networkFeedInQuarter"], colnames, np.array(("Verbrauch")))
