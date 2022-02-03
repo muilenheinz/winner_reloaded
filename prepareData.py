@@ -73,9 +73,6 @@ def convertTimestampToDateInformation(data: np.array):
         td = datetime.combine(datetime.min, timeValue) - datetime.min
         midnightTimestamp = td // timedelta(seconds=1)
 
-        # # clip the "midnight-timestamp" to 0-1
-        clippedMidnightTimestamp = midnightTimestamp / 86400
-
         seconds_in_day = 24*60*60
         cosine_time = np.cos(2*np.pi*midnightTimestamp/seconds_in_day)
 

@@ -29,8 +29,8 @@ def calcTanzendeSiedlung():
     for i in removeCols:
         tanzendeSiedlungData = np.delete(tanzendeSiedlungData, i, 1)
 
-    executeFeasibilityAnalysistanzendeSiedlung(tanzendeSiedlungData, False, False, False, True, "cornflowerblue")
+    executeFeasibilityAnalysistanzendeSiedlung(tanzendeSiedlungData, True, False, False, True, "cornflowerblue")
 
-# calcAlfonsPechStrasse()
+calcAlfonsPechStrasse()
 calcTanzendeSiedlung()
 
