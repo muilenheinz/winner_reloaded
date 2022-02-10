@@ -37,6 +37,7 @@ def plotTimeSeries(dataY, dataX=None, _label="timeseries", _type="scatter", _ind
             datetimeXAxis[key] = datetime.fromtimestamp(dataX[key] / 1000)
         dataX = datetimeXAxis
 
+    convert = dataX.T
     # if no xAxis is given mock the axis
     if dataX is None:
         dataX = np.array(list(np.arange(1, dataY.size+1)))
@@ -225,17 +226,18 @@ def executeFeasibilityAnalysistanzendeSiedlung(
     allData["timestamp"] = np.array(_data[:,0], dtype=float)
     allData["networkFeedInQuarter"] = np.array(_data[:,1], dtype=float)
     allData["networkObtainanceQuarter"] = np.array(_data[:,2], dtype=float)
-    allData["PVConsumption"] = np.array(_data[:,4], dtype=float)
-    allData["PVFeedIn"] = np.array(_data[:,3], dtype=float)
-    allData["overallConsumption"] = np.array(_data[:,-1], dtype=float)
+    allData["PVConsumption"] = np.array(_data[:,3], dtype=float)
+    allData["PVFeedIn"] = np.array(_data[:,4], dtype=float)
+    allData["overallConsumption"] = np.array(_data[:,-2], dtype=float)
 
-    indicesOfValesToPlot = np.array((17472, 17568))
+    indicesOfValesToPlot = np.array((17376, 17760)) #
+    # indicesOfValesToPlot = None
 
     # plot time series of the plain data
     if _plotPlainTimeSeries:
         yAxisUnit = "kWh"
         plotTimeSeries(allData["PVFeedIn"], allData["timestamp"], labels["PVFeedIn"], "line", indicesOfValesToPlot, yAxisUnit)
-        plotTimeSeries(allData["overallConsumption"], allData["timestamp"], labels["overallConsumption"], "line", None, yAxisUnit)
+        plotTimeSeries(allData["overallConsumption"], allData["timestamp"], labels["overallConsumption"], "line", indicesOfValesToPlot, yAxisUnit)
 
     # calc the autocorrelations
     if _plotAutocorrelations:
