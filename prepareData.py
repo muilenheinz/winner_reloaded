@@ -10,6 +10,8 @@ import zipfile
 import time
 import re
 import datetime as dt
+import pandas as pd
+from scipy.stats import kendalltau
 
 weatherStationId = None
 
@@ -84,6 +86,8 @@ def convertTimestampToDateInformation(data: np.array):
         weekdayVector = [0, 0, 0, 0, 0, 0, 0]
         weekdayVector[dayOfWeek] = 1
         line[-3] = str(weekdayVector)
+
+        line[-3] = dayOfWeek
 
         # get isWeekend
         if dayOfWeek == 5 or dayOfWeek == 6:
@@ -447,6 +451,32 @@ def addOccupanyNumbersTanzendeSiedlung(data: np.array):
         row[-1] = numberOfContracts
 
     return data
+
+def convertArrayToDataFrame(data: np.array, _colNames):
+    dataFrame = pd.DataFrame(data)
+    dataFrame.astype(float)
+    dataFrame.columns = _colNames
+
+    return dataFrame
+
+def filterDataBasedOnKendallRanks(data: pd.DataFrame, KendallRanksForCol = "Messwert", limit = 0.3):
+
+    # calc the kendall ranks for the col given as parameter
+    targetData = data[KendallRanksForCol]
+
+    del data["Zeitstempel"]
+
+    for column in data:
+        corr, _ = kendalltau(targetData, data[column])
+        if pd.isna(corr):
+            corr = 0
+        # filter all columns with kendall smaller than limit
+        if abs(corr) < limit:
+            del data[column]
+
+    return data
+
+
 
 
 

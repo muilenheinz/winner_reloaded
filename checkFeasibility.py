@@ -167,6 +167,8 @@ def calcKendallCoefficients(data: np.array, _compareWithColIndex = 0, _label = "
     # plot coefficients as barchart
     plotTimeSeries(kendallCoefficients, colNames, label, "bar")
 
+    return kendallCoefficients
+
 def executeFeasibilityAnalysisalfonsPechStr(_data: np.array, _color):
     global plotColor
     plotColor = _color

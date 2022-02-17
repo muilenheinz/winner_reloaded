@@ -1,5 +1,6 @@
 from prepareData import *
 from checkFeasibility import *
+from doPredictions import *
 
 # Overview of weatherstations available here:
 # https://opendata.dwd.de/climate_environment/CDC/help/CS_Stundenwerte_Beschreibung_Stationen.txt
@@ -8,15 +9,23 @@ weatherStationIdJena = "02444"      # wheatherstationID Jena Sternwarte
 
 
 # check and prepare Data for Alfons-Pech-Straße, Chemnitz
-def calcAlfonsPechStrasse():
+def calcAlfonsPechStrasse(_feasibilityAnalysis = True, _predictions = True):
     print("######################## calculations for Alfons-Pech-Strasse #######################")
+
     alfonsPechStrData = prepareData('../data/PV/APS_PV/', weatherStationIdChemnitz, True, ",", 1)
     alfonsPechStrData = dataCleaningAlfonsPechStrasse(alfonsPechStrData)
 
-    executeFeasibilityAnalysisalfonsPechStr(alfonsPechStrData, "red")
+    if _feasibilityAnalysis:
+        executeFeasibilityAnalysisalfonsPechStr(alfonsPechStrData, "red")
+
+    alfonsPechStrData = convertArrayToDataFrame(alfonsPechStrData)
+    alfonsPechStrData = filterDataBasedOnKendallRanks(alfonsPechStrData, "Messwert", 0.3)
+
+    if _predictions:
+        doPredictionsForAlfonsPechStrasse(alfonsPechStrData)
 
 # chak and prepare Data for tanzende Siedlung, Chemnitz
-def calcTanzendeSiedlung():
+def calcTanzendeSiedlung(_feasibilityAnalysis = True, _predictions = True):
     print("######################## calculations for tanzende Siedlung #######################")
     tanzendeSiedlungData = prepareData('../data/TAS/inetz/', weatherStationIdChemnitz, True, ";", 2)
 
@@ -29,8 +38,36 @@ def calcTanzendeSiedlung():
     for i in removeCols:
         tanzendeSiedlungData = np.delete(tanzendeSiedlungData, i, 1)
 
-    executeFeasibilityAnalysistanzendeSiedlung(tanzendeSiedlungData, True, False, False, True, "cornflowerblue")
+    if _feasibilityAnalysis:
+        executeFeasibilityAnalysistanzendeSiedlung(tanzendeSiedlungData, True, True, True, True, "cornflowerblue")
 
-calcAlfonsPechStrasse()
-calcTanzendeSiedlung()
+    if _predictions:
+        colNames = np.array((
+            "Zeitstempel",
+            "Netzbezug",
+            "Netzeinspeisung",
+            "Bezug PV-Analge",
+            "PV-Einspeisung",
+            "Zeit (cos)",
+            "Tag der Woche",
+            "ist Wochenende",
+            "Wochennummer",
+            "ist Feiertag",
+            "sind Schulferien",
+            "DS_10", # diffuse Himmelstrahlung 10min
+            "GS_10", #globalstrahlung joule
+            "SD_10", #sonnenscheindauer
+            "LS_10",# Langwellige Strahlung
+            "RWS_DAU_10", #Niederschlagsdauer 10min
+            "RWS_10", #Summe der Niederschlagsh. der vorangeg.10Min
+            "RWS_IND_10", #Niederschlagsindikator  10min
+            "Gesamtverbrauch",
+            "Mieteranzahl"
+        ))
 
+        tanzendeSiedlungData = convertArrayToDataFrame(tanzendeSiedlungData, colNames)
+        tanzendeSiedlungData = filterDataBasedOnKendallRanks(tanzendeSiedlungData, "Gesamtverbrauch", 0.3)
+        print("debug")
+
+# calcAlfonsPechStrasse(False, True)
+calcTanzendeSiedlung(False)
