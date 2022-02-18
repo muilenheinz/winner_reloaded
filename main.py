@@ -18,10 +18,27 @@ def calcAlfonsPechStrasse(_feasibilityAnalysis = True, _predictions = True):
     if _feasibilityAnalysis:
         executeFeasibilityAnalysisalfonsPechStr(alfonsPechStrData, "red")
 
-    alfonsPechStrData = convertArrayToDataFrame(alfonsPechStrData)
-    alfonsPechStrData = filterDataBasedOnKendallRanks(alfonsPechStrData, "Messwert", 0.3)
-
     if _predictions:
+        colNames = np.array((
+            "Zeitstempel",
+            "Messwert",
+            "Zeit (cos)",
+            "Tag der Woche",
+            "ist Wochenende",
+            "Wochennummer",
+            "ist Feiertag",
+            "sind Schulferien",
+            "DS_10",                # diffuse Himmelstrahlung 10min
+            "GS_10",                # globalstrahlung joule
+            "SD_10",                # sonnenscheindauer
+            "LS_10",                # Langwellige Strahlung
+            "RWS_DAU_10",           # Niederschlagsdauer 10min
+            "RWS_10",               # Summe der Niederschlagsh. der vorangeg.10Min
+            "RWS_IND_10",           # Niederschlagsindikator  10min
+        ))
+
+        alfonsPechStrData = convertArrayToDataFrame(alfonsPechStrData, colNames)
+        alfonsPechStrData = filterDataBasedOnKendallRanks(alfonsPechStrData, "Messwert", 0.3)
         doPredictionsForAlfonsPechStrasse(alfonsPechStrData)
 
 # chak and prepare Data for tanzende Siedlung, Chemnitz
@@ -69,5 +86,5 @@ def calcTanzendeSiedlung(_feasibilityAnalysis = True, _predictions = True):
         tanzendeSiedlungData = filterDataBasedOnKendallRanks(tanzendeSiedlungData, "Gesamtverbrauch", 0.3)
         print("debug")
 
-# calcAlfonsPechStrasse(False, True)
-calcTanzendeSiedlung(False)
+calcAlfonsPechStrasse(False, True)
+# calcTanzendeSiedlung(False)
