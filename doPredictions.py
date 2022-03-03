@@ -1,5 +1,6 @@
 from math import sqrt
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import math
 from keras.models import Sequential
@@ -204,7 +205,7 @@ def multivariateForecastNBackMForward(data: pd.DataFrame, n_stepsIntoPast, n_ste
     history = model.fit(
                     train_X,
                     train_y,
-                    epochs=3,
+                    epochs=100,
                     batch_size=128,
                     validation_data=(test_X, test_y),
                     verbose=2,
@@ -231,10 +232,27 @@ def multivariateForecastNBackMForward(data: pd.DataFrame, n_stepsIntoPast, n_ste
     inv_y = np.concatenate((test_y, test_X), axis=1)
     inv_y = scaler.inverse_transform(inv_y)
 
+    # plot the first val of every prediction series against the true values
     inv_yhat_target = inv_yhat[:, -n_features]
     inv_y_target = inv_y[:, -n_features]
-
     plotResults(inv_y_target, inv_yhat_target)
+
+    # get the target data out of predictions for the target factor
+    target_factor_index = 0
+
+    # get every target_factor_count's column out of the predictions
+    onlyTargetValuePredictions = np.zeros((inv_yhat.shape[0], n_stepsIntoFuture))
+    onlyTargetValueTestData = np.zeros((inv_yhat.shape[0], n_stepsIntoFuture))
+    for i in range(n_stepsIntoFuture):
+        targetColIndex = test_X.shape[1] + i * n_features + target_factor_index
+        targetCol = inv_yhat[:, targetColIndex]
+        onlyTargetValuePredictions[:, i] = targetCol
+
+        targetCol = inv_y[:, targetColIndex]
+        onlyTargetValueTestData[:, i] = targetCol
+
+    # plot the complete prediction series for the first suitable day
+    plotResults(onlyTargetValueTestData[0], onlyTargetValuePredictions[0])
 
     # calculate RMSE
     rmse = sqrt(mean_squared_error(inv_y, inv_yhat))
@@ -256,7 +274,7 @@ def doPredictionsForAlfonsPechStrasse(data: pd.DataFrame):
 
     # predict with influence factors
     # multivariateForecastOneBackOneForward(data)
-    multivariateForecastNBackMForward(data, 5, 4)
+    multivariateForecastNBackMForward(data, 20, 20)
     print("debug")
 
 
