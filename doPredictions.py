@@ -50,7 +50,7 @@ def doPredictionWithLookback(dataset: np.array, look_back = 1, _epochs=1):
     trainX, trainY = createDatasetWithLookback(train, look_back, 0)
     testX, testY = createDatasetWithLookback(test, look_back, 0)
 
-    # reshape input to be [samples, time steps, features] TODO: understand
+    # reshape input to be [samples, time steps, features]
     trainX = np.reshape(trainX, (trainX.shape[0], 1, trainX.shape[1]))
     testX = np.reshape(testX, (testX.shape[0], 1, testX.shape[1]))
 
@@ -96,18 +96,19 @@ def doPredictionWithLookback(dataset: np.array, look_back = 1, _epochs=1):
     plt.show()
 
 
-def multivariateForecast(data: pd.DataFrame):
+# given the input data calculates a model which makes one prediction out of one timestep back
+def multivariateForecastOneBackOneForward(data: pd.DataFrame):
     # scale the input values to value rage of 0 to 1
     scaler = MinMaxScaler(feature_range=(0, 1))
     data_scaled = scaler.fit_transform(data)
-    data = series_to_supervised(data_scaled, 1, 1)
+    data_supervised = series_to_supervised(data_scaled, 1, 1)
 
     # drop columns we don't want to predict
-    data.drop(data.columns[[9, 8, 7, 6]], axis=1, inplace=True)
+    data_supervised.drop(data_supervised.columns[[9, 8, 7, 6]], axis=1, inplace=True)
 
     # split in training and test data
-    values = data.values # convert DataFrame to np array
-    n_train_hours = round(data.shape[0] * 0.67)
+    values = data_supervised.values # convert DataFrame to np array
+    n_train_hours = round(data_supervised.shape[0] * 0.67)
     train = values[:n_train_hours, :]
     test = values[n_train_hours:, :]
 
@@ -115,7 +116,7 @@ def multivariateForecast(data: pd.DataFrame):
     train_X, train_y = train[:, :-1], train[:, -1]
     test_X, test_y = test[:, :-1], test[:, -1]
 
-    # reshape input to be 3D [samples, timesteps, features]
+    # reshape input to be 3D [samples, timesteps (per sample), features]
     train_X = train_X.reshape((train_X.shape[0], 1, train_X.shape[1]))
     test_X = test_X.reshape((test_X.shape[0], 1, test_X.shape[1]))
     print(train_X.shape, train_y.shape, test_X.shape, test_y.shape)
@@ -124,14 +125,19 @@ def multivariateForecast(data: pd.DataFrame):
     model = Sequential()
     model.add(LSTM(50, input_shape=(train_X.shape[1], train_X.shape[2])))
     model.add(Dense(1))
-    model.compile(loss='mae', optimizer='adam')
+    model.compile(loss='huber', optimizer='adam')
 
     # fit network
-    history = model.fit(train_X, train_y, epochs=50, batch_size=72, validation_data=(test_X, test_y), verbose=2, shuffle=False)
+    history = model.fit(train_X, train_y, epochs=100, batch_size=72, validation_data=(test_X, test_y), verbose=2, shuffle=False)
 
     # plot history
     pyplot.plot(history.history['loss'], label='train')
     pyplot.plot(history.history['val_loss'], label='test')
+    pyplot.legend()
+    pyplot.show()
+
+    pyplot.plot(history.history['accuracy'], label='train2')
+    pyplot.plot(history.history['val_accuracy'], label='test2')
     pyplot.legend()
     pyplot.show()
 
@@ -154,6 +160,92 @@ def multivariateForecast(data: pd.DataFrame):
     rmse = sqrt(mean_squared_error(inv_y, inv_yhat))
     print('Test RMSE: %.3f' % rmse)
 
+# given a dataset predicts the next timestep based on the n_hours previous timesteps
+# @dataset with target and influencing factors
+# @n_stepsIntoPast: based on how many past observations shall the prediction be done
+# @predict_index: which index in the data is the target size?
+def multivariateForecastNBackMForward(data: pd.DataFrame, n_stepsIntoPast, n_stepsIntoFuture=1, predict_index=0):
+    n_features = data.shape[1] # count number of influencing factors
+    data = data.values  # covert DataFrame to np array
+
+    # frame as supervised learning
+    reframed = series_to_supervised(data, n_stepsIntoPast, n_stepsIntoFuture)
+
+    # scale the input values to value rage of 0 to 1
+    scaler = MinMaxScaler(feature_range=(0, 1))
+    data_scaled = scaler.fit_transform(reframed)
+
+    # split into train and test sets
+    values = data_scaled
+    n_train_hours = round(reframed.shape[0] * 0.67)
+    train = values[:n_train_hours, :]
+    test = values[n_train_hours:, :]
+
+    # split into input and outputs
+    n_obs = n_stepsIntoPast * n_features
+    n_predictions = n_features * n_stepsIntoFuture
+    train_X, train_y = train[:, :n_obs], train[:, :n_predictions]
+    test_X, test_y = test[:, :n_obs], test[:, :n_predictions]
+    print(train_X.shape, len(train_X), train_y.shape)
+
+    # reshape input to be 3D [samples, timesteps, features]
+    train_X = train_X.reshape((train_X.shape[0], n_stepsIntoPast, n_features))
+    test_X = test_X.reshape((test_X.shape[0], n_stepsIntoPast, n_features))
+    print(train_X.shape, train_y.shape, test_X.shape, test_y.shape)
+
+    # design network
+    model = Sequential()
+    model.add(LSTM(50, input_shape=(train_X.shape[1], train_X.shape[2])))
+    model.add(Dense(n_stepsIntoFuture * n_features))
+    model.compile(loss='mae', optimizer='adam')
+    # mse -> overfitting
+
+    # fit network
+    history = model.fit(
+                    train_X,
+                    train_y,
+                    epochs=3,
+                    batch_size=128,
+                    validation_data=(test_X, test_y),
+                    verbose=2,
+                    shuffle=False
+                )
+
+    # plot history
+    pyplot.plot(history.history['loss'], label='train loss')
+    pyplot.plot(history.history['val_loss'], label='test loss')
+    pyplot.legend()
+    pyplot.show()
+
+    # make a prediction
+    yhat = model.predict(test_X)
+
+    # invert scaling for forecast
+    # the scaler needs an input with the same shape as the input shape, so concat the predictions with test_x to
+    # achieve that
+    test_X = test_X.reshape((test_X.shape[0], n_stepsIntoPast * n_features))
+    inv_yhat = np.concatenate((test_X, yhat), axis=1)
+    inv_yhat = scaler.inverse_transform(inv_yhat)
+
+    # invert scaling for actual data
+    inv_y = np.concatenate((test_y, test_X), axis=1)
+    inv_y = scaler.inverse_transform(inv_y)
+
+    inv_yhat_target = inv_yhat[:, -n_features]
+    inv_y_target = inv_y[:, -n_features]
+
+    plotResults(inv_y_target, inv_yhat_target)
+
+    # calculate RMSE
+    rmse = sqrt(mean_squared_error(inv_y, inv_yhat))
+    print('Test RMSE: %.3f' % rmse)
+
+def plotResults(originaldata, predictions):
+    pyplot.plot(originaldata, label='Originaldaten')
+    pyplot.plot(predictions, label='Vorhersagen')
+    pyplot.legend()
+    pyplot.show()
+
 
 def doPredictionsForAlfonsPechStrasse(data: pd.DataFrame):
 
@@ -163,7 +255,8 @@ def doPredictionsForAlfonsPechStrasse(data: pd.DataFrame):
     # doPredictionWithLookback(groupedData, 4, 10000)
 
     # predict with influence factors
-    multivariateForecast(data)
+    # multivariateForecastOneBackOneForward(data)
+    multivariateForecastNBackMForward(data, 5, 4)
     print("debug")
 
 
