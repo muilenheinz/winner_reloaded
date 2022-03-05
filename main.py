@@ -38,7 +38,8 @@ def calcAlfonsPechStrasse(_feasibilityAnalysis = True, _predictions = True):
         ))
 
         alfonsPechStrData = convertArrayToDataFrame(alfonsPechStrData, colNames)
-        alfonsPechStrData = filterDataBasedOnKendallRanks(alfonsPechStrData, "Messwert", 0.3)
+
+        # regain timestamp
         doPredictionsForAlfonsPechStrasse(alfonsPechStrData)
 
 # chak and prepare Data for tanzende Siedlung, Chemnitz

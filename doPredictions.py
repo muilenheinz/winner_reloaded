@@ -165,9 +165,9 @@ def multivariateForecastOneBackOneForward(data: pd.DataFrame):
 # @dataset with target and influencing factors
 # @n_stepsIntoPast: based on how many past observations shall the prediction be done
 # @predict_index: which index in the data is the target size?
-def multivariateForecastNBackMForward(data: pd.DataFrame, n_stepsIntoPast, n_stepsIntoFuture=1, predict_index=0):
-    n_features = data.shape[1] # count number of influencing factors
-    data = data.values  # covert DataFrame to np array
+def multivariateForecastNBackMForward(_data: pd.DataFrame, n_stepsIntoPast, n_stepsIntoFuture=1, predict_index=0):
+    n_features = _data.shape[1]  # count number of influencing factors
+    data = np.array(_data, dtype=float)
 
     # frame as supervised learning
     reframed = series_to_supervised(data, n_stepsIntoPast, n_stepsIntoFuture)
@@ -177,24 +177,35 @@ def multivariateForecastNBackMForward(data: pd.DataFrame, n_stepsIntoPast, n_ste
     data_scaled = scaler.fit_transform(reframed)
 
     # split into train and test sets
-    values = data_scaled
     n_train_hours = round(reframed.shape[0] * 0.67)
-    train = values[:n_train_hours, :]
-    test = values[n_train_hours:, :]
+    print(n_train_hours)
+    train = data_scaled[:n_train_hours, :]
+    test = data_scaled[n_train_hours:, :]
 
     # split into input and outputs
     n_obs = n_stepsIntoPast * n_features
     n_predictions = n_features * n_stepsIntoFuture
-    train_X, train_y = train[:, :n_obs], train[:, :n_predictions]
-    test_X, test_y = test[:, :n_obs], test[:, :n_predictions]
-    print(train_X.shape, len(train_X), train_y.shape)
+    train_X, train_y = train[:, :n_obs], train[:, -n_predictions:]
+    test_X, test_y = test[:, :n_obs], test[:, -n_predictions:]
+
+    # for day in range(10):
+    #     start = day * 1440
+    #     end = start + 1440
+    #     pyplot.plot(test_X[start:end, 0], label='test_X Tag' + str(day))
+    #     pyplot.plot(data[n_train_hours+start:n_train_hours+start+1440, 0], label='Originaldaten Tag ' + str(day))
+    #
+    #     pyplot.plot(train_X[start:end, 0], label='train_X Tag '+ str(day))
+    #     pyplot.plot(data[start:end, 0], label='Originaldaten Tag' + str(day))
+    #
+    #     pyplot.legend()
+    #     pyplot.show()
 
     # reshape input to be 3D [samples, timesteps, features]
     train_X = train_X.reshape((train_X.shape[0], n_stepsIntoPast, n_features))
     test_X = test_X.reshape((test_X.shape[0], n_stepsIntoPast, n_features))
-    print(train_X.shape, train_y.shape, test_X.shape, test_y.shape)
 
     # design network
+    print("creating model...")
     model = Sequential()
     model.add(LSTM(50, input_shape=(train_X.shape[1], train_X.shape[2])))
     model.add(Dense(n_stepsIntoFuture * n_features))
@@ -202,6 +213,7 @@ def multivariateForecastNBackMForward(data: pd.DataFrame, n_stepsIntoPast, n_ste
     # mse -> overfitting
 
     # fit network
+    print("train the model...")
     history = model.fit(
                     train_X,
                     train_y,
@@ -215,7 +227,7 @@ def multivariateForecastNBackMForward(data: pd.DataFrame, n_stepsIntoPast, n_ste
     # plot history
     pyplot.plot(history.history['loss'], label='train loss')
     pyplot.plot(history.history['val_loss'], label='test loss')
-    pyplot.legend()
+    plt.legend(loc='upper right')
     pyplot.show()
 
     # make a prediction
@@ -229,13 +241,16 @@ def multivariateForecastNBackMForward(data: pd.DataFrame, n_stepsIntoPast, n_ste
     inv_yhat = scaler.inverse_transform(inv_yhat)
 
     # invert scaling for actual data
-    inv_y = np.concatenate((test_y, test_X), axis=1)
+    inv_y = np.concatenate((test_X, test_y), axis=1)
     inv_y = scaler.inverse_transform(inv_y)
 
-    # plot the first val of every prediction series against the true values
-    inv_yhat_target = inv_yhat[:, -n_features]
-    inv_y_target = inv_y[:, -n_features]
-    plotResults(inv_y_target, inv_yhat_target)
+    plotNForwardMBackwardsResults(inv_yhat, inv_y, n_stepsIntoFuture, test_X, test_y, n_features)
+
+    # calculate RMSE
+    rmse = sqrt(mean_squared_error(inv_y, inv_yhat))
+    print('Test RMSE: %.3f' % rmse)
+
+def plotNForwardMBackwardsResults(inv_yhat, inv_y, n_stepsIntoFuture, test_X, test_Y, n_features):
 
     # get the target data out of predictions for the target factor
     target_factor_index = 0
@@ -243,6 +258,7 @@ def multivariateForecastNBackMForward(data: pd.DataFrame, n_stepsIntoPast, n_ste
     # get every target_factor_count's column out of the predictions
     onlyTargetValuePredictions = np.zeros((inv_yhat.shape[0], n_stepsIntoFuture))
     onlyTargetValueTestData = np.zeros((inv_yhat.shape[0], n_stepsIntoFuture))
+
     for i in range(n_stepsIntoFuture):
         targetColIndex = test_X.shape[1] + i * n_features + target_factor_index
         targetCol = inv_yhat[:, targetColIndex]
@@ -251,12 +267,21 @@ def multivariateForecastNBackMForward(data: pd.DataFrame, n_stepsIntoPast, n_ste
         targetCol = inv_y[:, targetColIndex]
         onlyTargetValueTestData[:, i] = targetCol
 
-    # plot the complete prediction series for the first suitable day
-    plotResults(onlyTargetValueTestData[0], onlyTargetValuePredictions[0])
+    # plot the complete prediction series for the first three days as predicted at midnight from
+    # the previous 24 hours
+    loop_top = int(inv_yhat.shape[0] / n_stepsIntoFuture)
+    for i in range(loop_top):
+        # prepend None values to the day to display, so it is shifted against the previously printed day
+        prependNoneData = np.zeros((n_stepsIntoFuture * i))
+        prependNoneData[:] = None
+        printOneDayTestData = np.concatenate((prependNoneData, onlyTargetValueTestData[i * n_stepsIntoFuture, :]))
+        printOneDayPredictionData = np.concatenate((prependNoneData, onlyTargetValuePredictions[i * n_stepsIntoFuture, :]))
 
-    # calculate RMSE
-    rmse = sqrt(mean_squared_error(inv_y, inv_yhat))
-    print('Test RMSE: %.3f' % rmse)
+        pyplot.plot(printOneDayTestData, label='Originaldaten Tag' + str(i))
+        pyplot.plot(printOneDayPredictionData, label='Vorhersagen Tag' + str(i))
+
+    # pyplot.legend()
+    pyplot.show()
 
 def plotResults(originaldata, predictions):
     pyplot.plot(originaldata, label='Originaldaten')
@@ -264,17 +289,30 @@ def plotResults(originaldata, predictions):
     pyplot.legend()
     pyplot.show()
 
+def getHourFromTimestamp(datarow):
+    datetimeValue = datetime.fromtimestamp(int(datarow["Zeitstempel"]) / 1000)
+    hourVal = int(datetimeValue.strftime('%H'))
+    datarow["Stunde"] = hourVal
+    return datarow
+
+def getTimeCosFromTimestamp(datarow):
+    seconds_in_day = 24*60*60
+    datarow["Zeit (cos)"] = np.cos(2*np.pi*datarow["Zeitstempel"]/seconds_in_day)
+    return datarow
 
 def doPredictionsForAlfonsPechStrasse(data: pd.DataFrame):
-
+    print("-- calc predictions for Alfons-Pech-Strasse --")
     # group data by day
-    # groupedData = data.groupby(['Tag der Woche', 'Wochennummer']).sum()
+    # groupedData = data.groupby(['Wochennummer', 'Tag der Woche']).sum()
     # groupedData = groupedData.to_numpy()
     # doPredictionWithLookback(groupedData, 4, 10000)
 
-    # predict with influence factors
-    # multivariateForecastOneBackOneForward(data)
-    multivariateForecastNBackMForward(data, 20, 20)
+    # group data by hour
+    data = data.apply(getHourFromTimestamp, axis=1)
+    data = data.astype("float")
+    groupedData = data.groupby(['Wochennummer', 'Tag der Woche', 'Stunde']).sum()
+    onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Messwert", 0.3)
+    multivariateForecastNBackMForward(onlyRelevantFactors, 48, 24)
     print("debug")
 
 
