@@ -1,6 +1,7 @@
 from prepareData import *
 from checkFeasibility import *
 from doPredictions import *
+import pandas as pd
 
 # Overview of weatherstations available here:
 # https://opendata.dwd.de/climate_environment/CDC/help/CS_Stundenwerte_Beschreibung_Stationen.txt
@@ -89,3 +90,4 @@ def calcTanzendeSiedlung(_feasibilityAnalysis = True, _predictions = True):
 
 calcAlfonsPechStrasse(False, True)
 # calcTanzendeSiedlung(False)
+# store the results in csv file
