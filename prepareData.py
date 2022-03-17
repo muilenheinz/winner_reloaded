@@ -459,8 +459,8 @@ def convertArrayToDataFrame(data: np.array, _colNames):
 
     return dataFrame
 
-def filterDataBasedOnKendallRanks(data: pd.DataFrame, KendallRanksForCol = "Messwert", limit = 0.3):
-
+def filterDataBasedOnKendallRanks(_data: pd.DataFrame, KendallRanksForCol = "Messwert", limit = 0.3):
+    data = _data.copy() # don't alter the input
     # calc the kendall ranks for the col given as parameter
     targetData = data[KendallRanksForCol]
 

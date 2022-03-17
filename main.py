@@ -39,9 +39,7 @@ def calcAlfonsPechStrasse(_feasibilityAnalysis = True, _predictions = True):
         ))
 
         alfonsPechStrData = convertArrayToDataFrame(alfonsPechStrData, colNames)
-
-        # regain timestamp
-        doPredictionsForAlfonsPechStrasse(alfonsPechStrData)
+        determineOptimalParametersForAlfonsPechStrasse(alfonsPechStrData)
 
 # chak and prepare Data for tanzende Siedlung, Chemnitz
 def calcTanzendeSiedlung(_feasibilityAnalysis = True, _predictions = True):
@@ -85,9 +83,8 @@ def calcTanzendeSiedlung(_feasibilityAnalysis = True, _predictions = True):
         ))
 
         tanzendeSiedlungData = convertArrayToDataFrame(tanzendeSiedlungData, colNames)
-        tanzendeSiedlungData = filterDataBasedOnKendallRanks(tanzendeSiedlungData, "Gesamtverbrauch", 0.3)
+        determineOptimalParametersForTanzendeSiedlung(tanzendeSiedlungData)
         print("debug")
 
 calcAlfonsPechStrasse(False, True)
-# calcTanzendeSiedlung(False)
-# store the results in csv file
+# calcTanzendeSiedlung(False, True)
