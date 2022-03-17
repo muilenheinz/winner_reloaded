@@ -87,4 +87,4 @@ def calcTanzendeSiedlung(_feasibilityAnalysis = True, _predictions = True):
         print("debug")
 
 calcAlfonsPechStrasse(False, True)
-# calcTanzendeSiedlung(False, True)
+calcTanzendeSiedlung(False, True)

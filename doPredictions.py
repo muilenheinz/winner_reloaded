@@ -259,8 +259,6 @@ def checkModuleParameters(
 
 def determineOptimalParametersForAlfonsPechStrasse(data: pd.DataFrame):
     print("-- calc predictions for Alfons-Pech-Strasse --")
-    global targetFilePath
-    targetFilePath = "../results/aps_regression_60minutes/"
     data = data.astype("float")
 
     # 60-Minute forecast on "plain" (ungrouped) data
@@ -282,7 +280,6 @@ def determineOptimalParametersForAlfonsPechStrasse(data: pd.DataFrame):
         print("Es gab Probleme beim bestimmen der Parameter für das 24 Stunden Modell der Alfons-Pech-Straße")
 
     # forecast for complete days
-    targetFilePath = "../results/aps_regression_1day/"
     groupedData = data.groupby(['Wochennummer', 'Tag der Woche']).sum()
     groupedData = groupedData / 1440
     onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Messwert", 0.3)
@@ -317,53 +314,102 @@ def approximateFunctionToData(_data: pd.DataFrame):
     plt.show()
 
 def determineOptimalParametersForTanzendeSiedlung(data: pd.DataFrame):
-    global targetFilePath
+    print("-- calc predictions for tanzende Siedlung --")
     data = data.astype("float")
 
-    # forecast for the next 24 hours in 15 minute steps
-    targetFilePath = "../results/ts_regression_24hours/"
+    # forecast on "plain" (ungrouped) data for the net 4 quarter hours
     onlyRelevantFactors = filterDataBasedOnKendallRanks(data, "Netzeinspeisung", 0.3)
-    checkModuleParameters(onlyRelevantFactors, 96, 96, 1, 100, 128, 0.67, 0.1, 2, 50, "mae")
-    # checkModuleParameters(onlyRelevantFactors, 192, 96, 1, 100, 128, 0.67, 0.1, 3, 50, "mae")
+    try:
+        determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_feedin_60minutes/", [4, 8, 12], 4, 1)
+    except:
+        print("Es gab Probleme beim bestimmen der Parameter für das 60 Minuten Modell für die Netzeinspeisung der tanzenden Siedlung")
 
-# forecast next 24 hours on hourly basis
-def determineOptimalParametersForModel(onlyRelevantFactors, targetFile, stepsIntoPast, stepsIntoFuture):
+    # forecast for next 24 hours on hourly basis
+    data = data.apply(getHourFromTimestamp, axis=1)
+    groupedData = data.groupby(['Wochennummer', 'Tag der Woche', 'Stunde']).sum()
+    groupedData = groupedData / 4
+    onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Netzeinspeisung", 0.3)
+    try:
+        determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_feedin_24hours/", [24, 48, 72], 24, 1)
+    except:
+        print("Es gab Probleme beim bestimmen der Parameter für das 24 Stunden Modell für die Netzeinspeisung der tanzenden Siedlung")
+
+    # forecast for complete days
+    groupedData = data.groupby(['Wochennummer', 'Tag der Woche']).sum()
+    groupedData = groupedData / 96
+    onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Netzeinspeisung", 0.3)
+    try:
+        determineOptimalParametersForModel(onlyRelevantFactors, "../results/aps_regression_feedin_1day/", [7, 14, 21], 7, 1)
+    except:
+        print("Es gab Probleme beim bestimmen der Parameter für das 1 Woche Modelles für die Netzeinspeisung der tanzenden Siedlung")
+
+    print("###################### Tanzende Siedlung: Nezeinspeisung durch, berechne Gesamtverbrauch ##################")
+
+    # forecast on "plain" (ungrouped) data for the net 4 quarter hours
+    onlyRelevantFactors = filterDataBasedOnKendallRanks(data, "Gesamtverbrauch", 0.3)
+    try:
+        determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_usage_60minutes/", [4, 8, 12], 4, 1)
+    except:
+        print("Es gab Probleme beim bestimmen der Parameter für das 60 Minuten Modell für den Gesamtverbrauch der tanzenden Siedlung")
+
+    # forecast for next 24 hours on hourly basis
+    data = data.apply(getHourFromTimestamp, axis=1)
+    groupedData = data.groupby(['Wochennummer', 'Tag der Woche', 'Stunde']).sum()
+    groupedData = groupedData / 4
+    onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Gesamtverbrauch", 0.3)
+    try:
+        determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_usage_24hours/", [24, 48, 72], 24, 1)
+    except:
+        print("Es gab Probleme beim bestimmen der Parameter für das 24 Stunden Modell für den Gesamtverbrauch der tanzenden Siedlung")
+
+    # forecast for complete days
+    groupedData = data.groupby(['Wochennummer', 'Tag der Woche']).sum()
+    groupedData = groupedData / 96
+    onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Gesamtverbrauch", 0.3)
+    try:
+        determineOptimalParametersForModel(onlyRelevantFactors, "../results/aps_regression_usage_1day/", [7, 14, 21], 7, 1)
+    except:
+        print("Es gab Probleme beim bestimmen der Parameter für das 1 Woche Modelles für den Gesamtverbrauch der tanzenden Siedlung")
+
+
+# test all "plausible" values for the given factors
+def determineOptimalParametersForModel(onlyRelevantFactors, targetFile, stepsIntoPast, stepsIntoFuture, predictIndex=0):
     global targetFilePath
 
     targetFilePath = targetFile
 
     # test number of units
-    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, 0, 100, 128, 0.67, 0.2, 1, 100, "mae")
-    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, 0, 256, 128, 0.67, 0.2, 2, 100, "mae")
-    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, 0, 512, 128, 0.67, 0.2, 3, 100, "mae")
-    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, 0, 1024, 128, 0.67, 0.2, 4, 100, "mae")
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.67, 0.2, 1, 100, "mae")
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 256, 128, 0.67, 0.2, 2, 100, "mae")
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 512, 128, 0.67, 0.2, 3, 100, "mae")
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 1024, 128, 0.67, 0.2, 4, 100, "mae")
 
     # test batch_size
-    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, 0, 100, 32, 0.67, 0.2, 5, 100, "mae")
-    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, 0, 100, 64, 0.67, 0.2, 6, 100, "mae")
-    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, 0, 100, 128, 0.67, 0.2, 7, 100, "mae")
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 32, 0.67, 0.2, 5, 100, "mae")
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 64, 0.67, 0.2, 6, 100, "mae")
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.67, 0.2, 7, 100, "mae")
 
     # test dropout
-    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, 0, 100, 128, 0.67, 0, 9, 100, "mae")
-    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, 0, 100, 128, 0.67, 0.1, 10, 100, "mae")
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.67, 0, 9, 100, "mae")
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.67, 0.1, 10, 100, "mae")
 
     # test optimization function
-    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, 0, 100, 128, 0.67, 0.1, 11, 100, "mse")
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.67, 0.1, 11, 100, "mse")
     cosine_loss_fn = tf.keras.losses.CosineSimilarity(axis=1)
-    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, 0, 100, 128, 0.67, 0.1, 12, 100, cosine_loss_fn)
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.67, 0.1, 12, 100, cosine_loss_fn)
     huber_loss = tf.keras.losses.Huber(delta=1.0, reduction="auto", name="huber_loss")
-    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, 0, 100, 128, 0.67, 0.1, 9, 13, 100, huber_loss)
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.67, 0.1, 9, 13, 100, huber_loss)
     meanAbsolutePercentageError = tf.keras.losses.MeanAbsolutePercentageError(reduction="auto", name="mean_absolute_percentage_error")
-    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, 0, 100, 128, 0.67, 0.1, 14, 100, meanAbsolutePercentageError)
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.67, 0.1, 14, 100, meanAbsolutePercentageError)
     meanSquaredLogarithmicError = tf.keras.losses.MeanSquaredLogarithmicError(reduction="auto", name="mean_squared_logarithmic_error")
-    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, 0, 100, 128, 0.67, 0.1, 15, 100, meanSquaredLogarithmicError)
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.67, 0.1, 15, 100, meanSquaredLogarithmicError)
     logCosh = tf.keras.losses.LogCosh(reduction="auto", name="log_cosh")
-    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, 0, 100, 128, 0.67, 0.1, 16, 100, logCosh)
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.67, 0.1, 16, 100, logCosh)
 
     # test steps into past
     index = 0
     for i in stepsIntoPast:
-        checkModuleParameters(onlyRelevantFactors, i, stepsIntoFuture, 0, 100, 128, 0.67, 0.2, (17 + index), 100, "mae")
+        checkModuleParameters(onlyRelevantFactors, i, stepsIntoFuture, predictIndex, 100, 128, 0.67, 0.2, (17 + index), 100, "mae")
         index += 1
 
 
