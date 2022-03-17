@@ -265,32 +265,31 @@ def determineOptimalParametersForAlfonsPechStrasse(data: pd.DataFrame):
 
     # 60-Minute forecast on "plain" (ungrouped) data
     onlyRelevantFactors = filterDataBasedOnKendallRanks(data, "Messwert", 0.3)
-    # optimize steps into past
-    # checkModuleParameters(onlyRelevantFactors, 60, 60, 0, 100, 128, 0.67, 0.2, 1, 100, "mae")
-    # checkModuleParameters(onlyRelevantFactors, 120, 60, 0, 100, 128, 0.67, 0.2, 2, 100, "mae")
-    # checkModuleParameters(onlyRelevantFactors, 1440, 60, 0, 100, 128, 0.67, 0.2, 3, 100, "mae")
     approximateFunctionToData(data)
+    try:
+        determineOptimalParametersForModel(onlyRelevantFactors, "../results/aps_regression_60minutes/", [30, 60, 120, 180], 60)
+    except:
+        print("Es gab Probleme beim bestimmen der Parameter für das 60 Minuten Modell der Alfons-Pech-Straße")
 
-
-    determineOptimalParametersAlfonsPechSTraße24HoursModel(data)
-
+    # forecast for next 24 hours on hourly basis
+    data = data.apply(getHourFromTimestamp, axis=1)
+    groupedData = data.groupby(['Wochennummer', 'Tag der Woche', 'Stunde']).sum()
+    groupedData = groupedData / 60
+    onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Messwert", 0.3)
+    try:
+        determineOptimalParametersForModel(onlyRelevantFactors, "../results/aps_regression_24hours/", [12, 48, 96], 24)
+    except:
+        print("Es gab Probleme beim bestimmen der Parameter für das 24 Stunden Modell der Alfons-Pech-Straße")
 
     # forecast for complete days
     targetFilePath = "../results/aps_regression_1day/"
     groupedData = data.groupby(['Wochennummer', 'Tag der Woche']).sum()
-    groupedData = groupedData / 60
+    groupedData = groupedData / 1440
     onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Messwert", 0.3)
-    checkModuleParameters(onlyRelevantFactors, 2, 1, 0, 100, 128, 0.67, 0, 2, 100, "mae")
-
-    # forecast next 24 hours on hourly basis
-    # data = data.apply(getHourFromTimestamp, axis=1)
-    # data = data.astype("float")
-    # groupedData = data.groupby(['Wochennummer', 'Tag der Woche', 'Stunde']).sum()
-    # onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Messwert", 0.3)
-    #
-    # checkModuleParameters(onlyRelevantFactors, 20, 20, 0, 100, 128, 0.67, 0.2, 2, 10, "mae")
-    # multivariateForecastNBackMForward(onlyRelevantFactors, 96, 24, 0, 1024, 128, 0.8, 0.2)
-    # multivariateForecastNBackMForward(onlyRelevantFactors, 96, 24, 0, 1024, 128, 0.67, 0.2)
+    try:
+        determineOptimalParametersForModel(onlyRelevantFactors, "../results/aps_regression_1day/", [7, 14, 21], 7)
+    except:
+        print("Es gab Probleme beim bestimmen der Parameter für das 7 Tage Modell der Alfons-Pech-Straße")
 
 def function(x, a, b, c, d):
     return a*x**3 + b * x ** 2 + c * x + d
@@ -328,49 +327,44 @@ def determineOptimalParametersForTanzendeSiedlung(data: pd.DataFrame):
     # checkModuleParameters(onlyRelevantFactors, 192, 96, 1, 100, 128, 0.67, 0.1, 3, 50, "mae")
 
 # forecast next 24 hours on hourly basis
-def determineOptimalParametersAlfonsPechSTraße24HoursModel(data):
-    print("determineOptimalParametersAlfonsPechSTraße24HoursModel")
+def determineOptimalParametersForModel(onlyRelevantFactors, targetFile, stepsIntoPast, stepsIntoFuture):
     global targetFilePath
 
-    targetFilePath = "../results/aps_regression_60minutes/"
-    data = data.apply(getHourFromTimestamp, axis=1)
-    data = data.astype("float")
-    groupedData = data.groupby(['Wochennummer', 'Tag der Woche', 'Stunde']).sum()
-    groupedData = groupedData / 60
-    onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Messwert", 0.3)
+    targetFilePath = targetFile
 
     # test number of units
-    checkModuleParameters(onlyRelevantFactors, 24, 24, 0, 100, 128, 0.67, 0.2, 1, 100, "mae")
-    checkModuleParameters(onlyRelevantFactors, 24, 24, 0, 256, 128, 0.67, 0.2, 2, 100, "mae")
-    checkModuleParameters(onlyRelevantFactors, 24, 24, 0, 512, 128, 0.67, 0.2, 3, 100, "mae")
-    checkModuleParameters(onlyRelevantFactors, 24, 24, 0, 1024, 128, 0.67, 0.2, 4, 100, "mae")
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, 0, 100, 128, 0.67, 0.2, 1, 100, "mae")
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, 0, 256, 128, 0.67, 0.2, 2, 100, "mae")
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, 0, 512, 128, 0.67, 0.2, 3, 100, "mae")
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, 0, 1024, 128, 0.67, 0.2, 4, 100, "mae")
 
     # test batch_size
-    checkModuleParameters(onlyRelevantFactors, 24, 24, 0, 100, 32, 0.67, 0.2, 5, 100, "mae")
-    checkModuleParameters(onlyRelevantFactors, 24, 24, 0, 100, 64, 0.67, 0.2, 6, 100, "mae")
-    checkModuleParameters(onlyRelevantFactors, 24, 24, 0, 100, 128, 0.67, 0.2, 7, 100, "mae")
-
-    # test steps into past
-    checkModuleParameters(onlyRelevantFactors, 12, 24, 0, 100, 128, 0.67, 0.2, 8, 100, "mae")
-    checkModuleParameters(onlyRelevantFactors, 48, 24, 0, 100, 128, 0.67, 0.2, 9, 100, "mae")
-    checkModuleParameters(onlyRelevantFactors, 96, 24, 0, 100, 128, 0.67, 0.2, 10, 100, "mae")
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, 0, 100, 32, 0.67, 0.2, 5, 100, "mae")
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, 0, 100, 64, 0.67, 0.2, 6, 100, "mae")
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, 0, 100, 128, 0.67, 0.2, 7, 100, "mae")
 
     # test dropout
-    checkModuleParameters(onlyRelevantFactors, 12, 24, 0, 100, 128, 0.67, 0, 8, 100, "mae")
-    checkModuleParameters(onlyRelevantFactors, 12, 24, 0, 100, 128, 0.67, 0.1, 8, 100, "mae")
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, 0, 100, 128, 0.67, 0, 9, 100, "mae")
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, 0, 100, 128, 0.67, 0.1, 10, 100, "mae")
 
     # test optimization function
-    checkModuleParameters(onlyRelevantFactors, 12, 24, 0, 100, 128, 0.67, 0.1, 8, 100, "mse")
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, 0, 100, 128, 0.67, 0.1, 11, 100, "mse")
     cosine_loss_fn = tf.keras.losses.CosineSimilarity(axis=1)
-    checkModuleParameters(onlyRelevantFactors, 12, 24, 0, 100, 128, 0.67, 0.1, 8, 100, cosine_loss_fn)
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, 0, 100, 128, 0.67, 0.1, 12, 100, cosine_loss_fn)
     huber_loss = tf.keras.losses.Huber(delta=1.0, reduction="auto", name="huber_loss")
-    checkModuleParameters(onlyRelevantFactors, 12, 24, 0, 100, 128, 0.67, 0.1, 8, 100, huber_loss)
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, 0, 100, 128, 0.67, 0.1, 9, 13, 100, huber_loss)
     meanAbsolutePercentageError = tf.keras.losses.MeanAbsolutePercentageError(reduction="auto", name="mean_absolute_percentage_error")
-    checkModuleParameters(onlyRelevantFactors, 12, 24, 0, 100, 128, 0.67, 0.1, 8, 100, meanAbsolutePercentageError)
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, 0, 100, 128, 0.67, 0.1, 14, 100, meanAbsolutePercentageError)
     meanSquaredLogarithmicError = tf.keras.losses.MeanSquaredLogarithmicError(reduction="auto", name="mean_squared_logarithmic_error")
-    checkModuleParameters(onlyRelevantFactors, 12, 24, 0, 100, 128, 0.67, 0.1, 8, 100, meanSquaredLogarithmicError)
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, 0, 100, 128, 0.67, 0.1, 15, 100, meanSquaredLogarithmicError)
     logCosh = tf.keras.losses.LogCosh(reduction="auto", name="log_cosh")
-    checkModuleParameters(onlyRelevantFactors, 12, 24, 0, 100, 128, 0.67, 0.1, 8, 100, logCosh)
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, 0, 100, 128, 0.67, 0.1, 16, 100, logCosh)
+
+    # test steps into past
+    index = 0
+    for i in stepsIntoPast:
+        checkModuleParameters(onlyRelevantFactors, i, stepsIntoFuture, 0, 100, 128, 0.67, 0.2, (17 + index), 100, "mae")
+        index += 1
 
 
 
