@@ -358,7 +358,7 @@ def determineOptimalParametersForModel(onlyRelevantFactors, targetFile, stepsInt
     targetFilePath = targetFile
 
     # test number of units
-    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.2, 1, 1, "mae")
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.2, 1, 100, "mae")
     checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 256, 128, 0.8, 0.2, 2, 100, "mae")
     checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 512, 128, 0.8, 0.2, 3, 100, "mae")
     checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 1024, 128, 0.8, 0.2, 4, 100, "mae")
