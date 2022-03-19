@@ -145,6 +145,7 @@ def plotNForwardMBackwardsResults(inv_yhat, n_stepsIntoFuture, onlyTargetValuePr
     loop_top = int(inv_yhat.shape[0] / n_stepsIntoFuture)
     plottableTestData = np.zeros((1))
     plottablePredictionData = np.zeros((1))
+    pyplot.figure(0)
     for i in range(loop_top):
         # plot the forecasts as sepearted values
         # prepend None values to the day to display, so it is shifted against the previously printed day
@@ -168,6 +169,7 @@ def plotNForwardMBackwardsResults(inv_yhat, n_stepsIntoFuture, onlyTargetValuePr
         plt.savefig(targetFilePath + str(_modelNumber) + '_predictions_split.jpg', bbox_inches='tight', dpi=150)
 
     pyplot.show()
+    pyplot.figure(1)
 
     # plot all lines as one in one chart
     pyplot.plot(plottableTestData, label='Originaldaten')
@@ -177,6 +179,7 @@ def plotNForwardMBackwardsResults(inv_yhat, n_stepsIntoFuture, onlyTargetValuePr
         plt.savefig(targetFilePath + str(_modelNumber) + '_predictions.jpg', bbox_inches='tight', dpi=150)
     pyplot.show()
 
+    pyplot.figure(2)
     pyplot.plot(plottableTestData[:96], label='Originaldaten')
     pyplot.plot(plottablePredictionData[:96], label='Vorhersagen')
     pyplot.legend()
