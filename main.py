@@ -86,5 +86,5 @@ def calcTanzendeSiedlung(_feasibilityAnalysis = True, _predictions = True):
         determineOptimalParametersForTanzendeSiedlung(tanzendeSiedlungData)
         print("debug")
 
-calcAlfonsPechStrasse(False, True)
+# calcAlfonsPechStrasse(False, True)
 calcTanzendeSiedlung(False, True)

@@ -39,7 +39,8 @@ def loadData(_path, _csvSeparator, _headerRows):
                 if line != "" and line != "\n" and line != '""':
                     data = line.replace('"', '').strip().split(_csvSeparator)
                     data = convertDecimalCommaToDecimalPointInDict(data)
-                    result.append(data)
+                    if len(data) == 25:
+                        result.append(data)
 
     return np.array(result)
 
