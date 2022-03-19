@@ -264,10 +264,10 @@ def determineOptimalParametersForAlfonsPechStrasse(data: pd.DataFrame):
     # 60-Minute forecast on "plain" (ungrouped) data
     onlyRelevantFactors = filterDataBasedOnKendallRanks(data, "Messwert", 0.3)
     approximateFunctionToData(data)
-    try:
-        determineOptimalParametersForModel(onlyRelevantFactors, "../results/aps_regression_60minutes/", [30, 60, 120, 180], 60)
-    except:
-        print("Es gab Probleme beim bestimmen der Parameter für das 60 Minuten Modell der Alfons-Pech-Straße")
+    # try:
+    determineOptimalParametersForModel(onlyRelevantFactors, "../results/aps_regression_60minutes/", [30, 60, 120, 180], 60)
+    # except:
+    #     print("Es gab Probleme beim bestimmen der Parameter für das 60 Minuten Modell der Alfons-Pech-Straße")
 
     # forecast for next 24 hours on hourly basis
     data = data.apply(getHourFromTimestamp, axis=1)
@@ -319,55 +319,55 @@ def determineOptimalParametersForTanzendeSiedlung(data: pd.DataFrame):
 
     # forecast on "plain" (ungrouped) data for the net 4 quarter hours
     onlyRelevantFactors = filterDataBasedOnKendallRanks(data, "Netzeinspeisung", 0.3)
-    try:
-        determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_feedin_60minutes/", [4, 8, 12], 4, 1)
-    except:
-        print("Es gab Probleme beim bestimmen der Parameter für das 60 Minuten Modell für die Netzeinspeisung der tanzenden Siedlung")
+    #try:
+    determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_feedin_60minutes/", [4, 8, 12], 4, 1)
+    # except:
+    #    print("Es gab Probleme beim bestimmen der Parameter für das 60 Minuten Modell für die Netzeinspeisung der tanzenden Siedlung")
 
     # forecast for next 24 hours on hourly basis
     data = data.apply(getHourFromTimestamp, axis=1)
     groupedData = data.groupby(['Wochennummer', 'Tag der Woche', 'Stunde']).sum()
     groupedData = groupedData / 4
     onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Netzeinspeisung", 0.3)
-    try:
-        determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_feedin_24hours/", [24, 48, 72], 24, 1)
-    except:
-        print("Es gab Probleme beim bestimmen der Parameter für das 24 Stunden Modell für die Netzeinspeisung der tanzenden Siedlung")
+    #try:
+    determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_feedin_24hours/", [24, 48, 72], 24, 1)
+    #except:
+     #   print("Es gab Probleme beim bestimmen der Parameter für das 24 Stunden Modell für die Netzeinspeisung der tanzenden Siedlung")
 
     # forecast for complete days
     groupedData = data.groupby(['Wochennummer', 'Tag der Woche']).sum()
     groupedData = groupedData / 96
     onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Netzeinspeisung", 0.3)
-    try:
-        determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_feedin_1day/", [7, 14, 21], 7, 1)
-    except:
-        print("Es gab Probleme beim bestimmen der Parameter für das 1 Woche Modelles für die Netzeinspeisung der tanzenden Siedlung")
+    # try:
+    determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_feedin_1day/", [7, 14, 21], 7, 1)
+    # except:
+    #     print("Es gab Probleme beim bestimmen der Parameter für das 1 Woche Modelles für die Netzeinspeisung der tanzenden Siedlung")
 
     print("###################### Tanzende Siedlung: Nezeinspeisung durch, berechne Gesamtverbrauch ##################")
 
     # forecast on "plain" (ungrouped) data for the net 4 quarter hours
     onlyRelevantFactors = filterDataBasedOnKendallRanks(data, "Gesamtverbrauch", 0.3)
-    try:
-        determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_usage_60minutes/", [4, 8, 12], 4, 1)
-    except:
-        print("Es gab Probleme beim bestimmen der Parameter für das 60 Minuten Modell für den Gesamtverbrauch der tanzenden Siedlung")
+    # try:
+    determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_usage_60minutes/", [4, 8, 12], 4, 1)
+    # except:
+    #    print("Es gab Probleme beim bestimmen der Parameter für das 60 Minuten Modell für den Gesamtverbrauch der tanzenden Siedlung")
 
     # forecast for next 24 hours on hourly basis
     data = data.apply(getHourFromTimestamp, axis=1)
     groupedData = data.groupby(['Wochennummer', 'Tag der Woche', 'Stunde']).sum()
     onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Gesamtverbrauch", 0.3)
-    try:
-        determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_usage_24hours/", [24, 48, 72], 24, 1)
-    except:
-        print("Es gab Probleme beim bestimmen der Parameter für das 24 Stunden Modell für den Gesamtverbrauch der tanzenden Siedlung")
+    # try:
+    determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_usage_24hours/", [24, 48, 72], 24, 1)
+    # except:
+    #    print("Es gab Probleme beim bestimmen der Parameter für das 24 Stunden Modell für den Gesamtverbrauch der tanzenden Siedlung")
 
     # forecast for complete days
     groupedData = data.groupby(['Wochennummer', 'Tag der Woche']).sum()
     onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Gesamtverbrauch", 0.3)
-    try:
-        determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_usage_1day/", [7, 14, 21], 7, 1)
-    except:
-        print("Es gab Probleme beim bestimmen der Parameter für das 1 Woche Modelles für den Gesamtverbrauch der tanzenden Siedlung")
+    # try:
+    determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_usage_1day/", [7, 14, 21], 7, 1)
+    #except:
+    #    print("Es gab Probleme beim bestimmen der Parameter für das 1 Woche Modelles für den Gesamtverbrauch der tanzenden Siedlung")
 
 
 # test all "plausible" values for the given factors
