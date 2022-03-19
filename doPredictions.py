@@ -215,7 +215,7 @@ def checkModuleParameters(
     rmse = np.array([0.0, 0.0, 0.0])
     executionTime = np.array([0.0, 0.0, 0.0])
 
-    # store the results in csv file
+    # execute model 3 times
     for i in range(3):
         startTime = time.time()
         rmse[i] = multivariateForecastNBackMForward(
@@ -237,8 +237,13 @@ def checkModuleParameters(
     averageRMSE = np.sum(rmse) / 3
     averageExecutionTime = np.sum(executionTime) / 3
 
+    # store the results in csv file
     file_path = targetFilePath + 'regressionModels.csv'
-    df = pd.read_csv(file_path, sep=";")
+    if os.path.isfile(file_path):
+        df = pd.read_csv(file_path, sep=";")
+    else:
+        df = pd.DataFrame()
+
     newEntry = {
         "Nummer": _modelNumber,
         "LSTM-Layer": "2",
@@ -267,29 +272,20 @@ def determineOptimalParametersForAlfonsPechStrasse(data: pd.DataFrame):
     # 60-Minute forecast on "plain" (ungrouped) data
     onlyRelevantFactors = filterDataBasedOnKendallRanks(data, "Messwert", 0.3)
     approximateFunctionToData(data)
-    # try:
     determineOptimalParametersForModel(onlyRelevantFactors, "../results/aps_regression_60minutes/", [30, 60, 120, 180], 60)
-    # except:
-    #     print("Es gab Probleme beim bestimmen der Parameter für das 60 Minuten Modell der Alfons-Pech-Straße")
 
     # forecast for next 24 hours on hourly basis
     data = data.apply(getHourFromTimestamp, axis=1)
     groupedData = data.groupby(['Wochennummer', 'Tag der Woche', 'Stunde']).sum()
     groupedData = groupedData / 60
     onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Messwert", 0.3)
-    try:
-        determineOptimalParametersForModel(onlyRelevantFactors, "../results/aps_regression_24hours/", [12, 48, 96], 24)
-    except:
-        print("Es gab Probleme beim bestimmen der Parameter für das 24 Stunden Modell der Alfons-Pech-Straße")
+    determineOptimalParametersForModel(onlyRelevantFactors, "../results/aps_regression_24hours/", [12, 48, 96], 24)
 
     # forecast for complete days
     groupedData = data.groupby(['Wochennummer', 'Tag der Woche']).sum()
     groupedData = groupedData / 1440
     onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Messwert", 0.3)
-    try:
-        determineOptimalParametersForModel(onlyRelevantFactors, "../results/aps_regression_1day/", [7, 14, 21], 7)
-    except:
-        print("Es gab Probleme beim bestimmen der Parameter für das 7 Tage Modell der Alfons-Pech-Straße")
+    determineOptimalParametersForModel(onlyRelevantFactors, "../results/aps_regression_1day/", [7, 14, 21], 7)
 
 def function(x, a, b, c, d):
     return a*x**3 + b * x ** 2 + c * x + d
@@ -322,55 +318,37 @@ def determineOptimalParametersForTanzendeSiedlung(data: pd.DataFrame):
 
     # forecast on "plain" (ungrouped) data for the net 4 quarter hours
     onlyRelevantFactors = filterDataBasedOnKendallRanks(data, "Netzeinspeisung", 0.3)
-    #try:
     determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_feedin_60minutes/", [4, 8, 12], 4, 1)
-    # except:
-    #    print("Es gab Probleme beim bestimmen der Parameter für das 60 Minuten Modell für die Netzeinspeisung der tanzenden Siedlung")
 
     # forecast for next 24 hours on hourly basis
     data = data.apply(getHourFromTimestamp, axis=1)
     groupedData = data.groupby(['Wochennummer', 'Tag der Woche', 'Stunde']).sum()
     groupedData = groupedData / 4
     onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Netzeinspeisung", 0.3)
-    #try:
     determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_feedin_24hours/", [24, 48, 72], 24, 1)
-    #except:
-     #   print("Es gab Probleme beim bestimmen der Parameter für das 24 Stunden Modell für die Netzeinspeisung der tanzenden Siedlung")
 
     # forecast for complete days
     groupedData = data.groupby(['Wochennummer', 'Tag der Woche']).sum()
     groupedData = groupedData / 96
     onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Netzeinspeisung", 0.3)
-    # try:
     determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_feedin_1day/", [7, 14, 21], 7, 1)
-    # except:
-    #     print("Es gab Probleme beim bestimmen der Parameter für das 1 Woche Modelles für die Netzeinspeisung der tanzenden Siedlung")
 
     print("###################### Tanzende Siedlung: Nezeinspeisung durch, berechne Gesamtverbrauch ##################")
 
     # forecast on "plain" (ungrouped) data for the net 4 quarter hours
     onlyRelevantFactors = filterDataBasedOnKendallRanks(data, "Gesamtverbrauch", 0.3)
-    # try:
     determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_usage_60minutes/", [4, 8, 12], 4, 1)
-    # except:
-    #    print("Es gab Probleme beim bestimmen der Parameter für das 60 Minuten Modell für den Gesamtverbrauch der tanzenden Siedlung")
 
     # forecast for next 24 hours on hourly basis
     data = data.apply(getHourFromTimestamp, axis=1)
     groupedData = data.groupby(['Wochennummer', 'Tag der Woche', 'Stunde']).sum()
     onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Gesamtverbrauch", 0.3)
-    # try:
     determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_usage_24hours/", [24, 48, 72], 24, 1)
-    # except:
-    #    print("Es gab Probleme beim bestimmen der Parameter für das 24 Stunden Modell für den Gesamtverbrauch der tanzenden Siedlung")
 
     # forecast for complete days
     groupedData = data.groupby(['Wochennummer', 'Tag der Woche']).sum()
     onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Gesamtverbrauch", 0.3)
-    # try:
     determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_usage_1day/", [7, 14, 21], 7, 1)
-    #except:
-    #    print("Es gab Probleme beim bestimmen der Parameter für das 1 Woche Modelles für den Gesamtverbrauch der tanzenden Siedlung")
 
 
 # test all "plausible" values for the given factors
@@ -380,7 +358,7 @@ def determineOptimalParametersForModel(onlyRelevantFactors, targetFile, stepsInt
     targetFilePath = targetFile
 
     # test number of units
-    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.2, 1, 100, "mae")
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.2, 1, 1, "mae")
     checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 256, 128, 0.8, 0.2, 2, 100, "mae")
     checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 512, 128, 0.8, 0.2, 3, 100, "mae")
     checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 1024, 128, 0.8, 0.2, 4, 100, "mae")

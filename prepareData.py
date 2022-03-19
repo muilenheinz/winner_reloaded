@@ -39,7 +39,7 @@ def loadData(_path, _csvSeparator, _headerRows):
                 if line != "" and line != "\n" and line != '""':
                     data = line.replace('"', '').strip().split(_csvSeparator)
                     data = convertDecimalCommaToDecimalPointInDict(data)
-                    if len(data) == 25:
+                    if len(data) == 25 or _path == '../data/PV/APS_PV/':
                         result.append(data)
 
     return np.array(result)
