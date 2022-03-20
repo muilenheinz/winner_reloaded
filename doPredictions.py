@@ -185,6 +185,8 @@ def plotNForwardMBackwardsResults(inv_yhat, n_stepsIntoFuture, onlyTargetValuePr
     pyplot.legend()
     pyplot.show()
 
+    plt.clf()
+
 
 def getHourFromTimestamp(datarow):
     datetimeValue = datetime.fromtimestamp(int(datarow["Zeitstempel"]) / 1000)
@@ -270,9 +272,9 @@ def determineOptimalParametersForAlfonsPechStrasse(data: pd.DataFrame):
     data = data.astype("float")
 
     # 60-Minute forecast on "plain" (ungrouped) data
-    onlyRelevantFactors = filterDataBasedOnKendallRanks(data, "Messwert", 0.3)
-    approximateFunctionToData(data)
-    determineOptimalParametersForModel(onlyRelevantFactors, "../results/aps_regression_60minutes/", [30, 60, 120, 180], 60, 0, False)
+    # onlyRelevantFactors = filterDataBasedOnKendallRanks(data, "Messwert", 0.3)
+    # approximateFunctionToData(data)
+    # determineOptimalParametersForModel(onlyRelevantFactors, "../results/aps_regression_60minutes/", [30, 60, 120, 180], 60, 0, False)
 
     # forecast for next 24 hours on hourly basis
     data = data.apply(getHourFromTimestamp, axis=1)
@@ -358,25 +360,24 @@ def determineOptimalParametersForModel(onlyRelevantFactors, targetFile, stepsInt
     targetFilePath = targetFile
 
     # test number of units
-    if doFirstHalf:
-        checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.2, 1, 100, "mae")
-        checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 256, 128, 0.8, 0.2, 2, 100, "mae")
-        checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 512, 128, 0.8, 0.2, 3, 100, "mae")
-        checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 1024, 128, 0.8, 0.2, 4, 100, "mae")
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.2, 1, 100, "mae")
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 256, 128, 0.8, 0.2, 2, 100, "mae")
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 512, 128, 0.8, 0.2, 3, 100, "mae")
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 1024, 128, 0.8, 0.2, 4, 100, "mae")
 
-        # test batch_size
-        checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 32, 0.8, 0.2, 5, 100, "mae")
-        checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 64, 0.8, 0.2, 6, 100, "mae")
-        checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.2, 7, 100, "mae")
+    # test batch_size
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 32, 0.8, 0.2, 5, 100, "mae")
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 64, 0.8, 0.2, 6, 100, "mae")
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.2, 7, 100, "mae")
 
-        # test dropout
-        checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0, 9, 100, "mae")
-        checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 10, 100, "mae")
+    # test dropout
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0, 9, 100, "mae")
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 10, 100, "mae")
 
-        # test optimization function
-        checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 11, 100, "mse")
-        cosine_loss_fn = tf.keras.losses.CosineSimilarity(axis=1)
-        checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 12, 100, cosine_loss_fn)
+    # test optimization function
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 11, 100, "mse")
+    cosine_loss_fn = tf.keras.losses.CosineSimilarity(axis=1)
+    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 12, 100, cosine_loss_fn)
 
     huber_loss = tf.keras.losses.Huber(delta=1.0, reduction="auto", name="huber_loss")
     checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 13, 100, huber_loss)
