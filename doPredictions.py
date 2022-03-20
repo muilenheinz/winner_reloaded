@@ -375,8 +375,9 @@ def determineOptimalParametersForModel(onlyRelevantFactors, targetFile, stepsInt
 
         # test optimization function
         checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 11, 100, "mse")
-    cosine_loss_fn = tf.keras.losses.CosineSimilarity(axis=1)
-    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 12, 100, cosine_loss_fn)
+        cosine_loss_fn = tf.keras.losses.CosineSimilarity(axis=1)
+        checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 12, 100, cosine_loss_fn)
+
     huber_loss = tf.keras.losses.Huber(delta=1.0, reduction="auto", name="huber_loss")
     checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 13, 100, huber_loss)
     meanAbsolutePercentageError = tf.keras.losses.MeanAbsolutePercentageError(reduction="auto", name="mean_absolute_percentage_error")
