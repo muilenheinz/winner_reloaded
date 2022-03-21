@@ -154,8 +154,8 @@ def plotNForwardMBackwardsResults(inv_yhat, n_stepsIntoFuture, onlyTargetValuePr
         printOneDayTestData = np.concatenate((prependNoneData, onlyTargetValueTestData[i * n_stepsIntoFuture, :]))
         printOneDayPredictionData = np.concatenate((prependNoneData, onlyTargetValuePredictions[i * n_stepsIntoFuture, :]))
 
-        pyplot.plot(printOneDayTestData, label='Originaldaten Tag' + str(i))
-        pyplot.plot(printOneDayPredictionData, label='Vorhersagen Tag' + str(i))
+        # pyplot.plot(printOneDayTestData, label='Originaldaten Tag' + str(i))
+        # pyplot.plot(printOneDayPredictionData, label='Vorhersagen Tag' + str(i))
 
         # prepare to plot those forecasts in one line
         plottableTestData = np.concatenate((plottableTestData, onlyTargetValueTestData[i * n_stepsIntoFuture, :]))
@@ -165,8 +165,8 @@ def plotNForwardMBackwardsResults(inv_yhat, n_stepsIntoFuture, onlyTargetValuePr
         pyplot.legend()
 
     # store the plot on the first run as an image
-    if _run == 0:
-        plt.savefig(targetFilePath + str(_modelNumber) + '_predictions_split.jpg', bbox_inches='tight', dpi=150)
+    # if _run == 0:
+    #     plt.savefig(targetFilePath + str(_modelNumber) + '_predictions_split.jpg', bbox_inches='tight', dpi=150)
 
     pyplot.show()
     pyplot.figure(1)
