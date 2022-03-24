@@ -1,0 +1,148 @@
+import pandas as pd
+import tensorflow as tf
+import sys
+import re
+
+from prepareData import *
+from modelFunctions import *
+from main import *
+
+
+# test all "plausible" values for the given factors
+def determineOptimalParametersForModel(onlyRelevantFactors, _targetFilePath, stepsIntoPast, stepsIntoFuture, predictIndex=0):
+    # test number of units
+    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.2, 1, 100, "mae")
+    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 256, 128, 0.8, 0.2, 2, 100, "mae")
+    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 512, 128, 0.8, 0.2, 3, 100, "mae")
+    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 1024, 128, 0.8, 0.2, 4, 100, "mae")
+
+    # test batch_size
+    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 32, 0.8, 0.2, 5, 100, "mae")
+    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 64, 0.8, 0.2, 6, 100, "mae")
+    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.2, 7, 100, "mae")
+
+    # test dropout
+    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0, 9, 100, "mae")
+    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 10, 100, "mae")
+
+    # test optimization function
+    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 11, 100, "mse")
+    cosine_loss_fn = tf.keras.losses.CosineSimilarity(axis=1)
+    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 12, 100, cosine_loss_fn)
+
+    huber_loss = tf.keras.losses.Huber(delta=1.0, reduction="auto", name="huber_loss")
+    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 13, 100, huber_loss)
+    meanAbsolutePercentageError = tf.keras.losses.MeanAbsolutePercentageError(reduction="auto", name="mean_absolute_percentage_error")
+    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 14, 100, meanAbsolutePercentageError)
+    meanSquaredLogarithmicError = tf.keras.losses.MeanSquaredLogarithmicError(reduction="auto", name="mean_squared_logarithmic_error")
+    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 15, 100, meanSquaredLogarithmicError)
+    logCosh = tf.keras.losses.LogCosh(reduction="auto", name="log_cosh")
+    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 16, 100, logCosh)
+
+    # test steps into past
+    index = 0
+    for i in stepsIntoPast:
+        checkModuleParameters(_targetFilePath, onlyRelevantFactors, i, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.2, (17 + index), 100, "mae")
+        index += 1
+
+def determineOptimalParametersForAlfonsPechStrasse(data: pd.DataFrame, _calc60MinuteModel = True, _calc24HourModel = True, _calc7DaysModel = True):
+    print("-- calc predictions for Alfons-Pech-Strasse --")
+    data = data.astype("float")
+
+    # 60-Minute forecast on "plain" (ungrouped) data
+    if _calc60MinuteModel:
+        onlyRelevantFactors = filterDataBasedOnKendallRanks(data, "Messwert", 0.3)
+        approximateFunctionToData(data)
+        determineOptimalParametersForModel(onlyRelevantFactors, "../results/aps_regression_60minutes/", [30, 60, 120, 180], 60, 0, False)
+
+    # forecast for next 24 hours on hourly basis
+    if _calc24HourModel:
+        data = data.apply(getHourFromTimestamp, axis=1)
+        groupedData = data.groupby(['Wochennummer', 'Tag der Woche', 'Stunde']).sum()
+        groupedData = groupedData / 60
+        onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Messwert", 0.3)
+        determineOptimalParametersForModel(onlyRelevantFactors, "../results/aps_regression_24hours/", [12, 48, 96], 24)
+
+    # forecast for complete days
+    if _calc7DaysModel:
+        groupedData = data.groupby(['Wochennummer', 'Tag der Woche']).sum()
+        groupedData = groupedData / 1440
+        onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Messwert", 0.3)
+        determineOptimalParametersForModel(onlyRelevantFactors, "../results/aps_regression_1day/", [7, 14, 21], 7)
+
+def determineOptimalParametersForTanzendeSiedlung(
+        data: pd.DataFrame,
+        _calc60minutesFeedIn=True,
+        _calc24hoursFeedIn=True,
+        _calc7daysFeedIn=True,
+        _calc60minutesUsage=True,
+        _calc24hoursUsage=True,
+        _calc7daysUsage=True,
+):
+    print("-- calc predictions for tanzende Siedlung --")
+    data = data.astype("float")
+
+    # forecast on "plain" (ungrouped) data for the net 4 quarter hours
+    if _calc60minutesFeedIn:
+        onlyRelevantFactors = filterDataBasedOnKendallRanks(data, "Netzeinspeisung", 0.3)
+        determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_feedin_60minutes/", [4, 8, 12], 4, 1)
+
+    # forecast for next 24 hours on hourly basis
+    if _calc24hoursFeedIn:
+        data = data.apply(getHourFromTimestamp, axis=1)
+        groupedData = data.groupby(['Wochennummer', 'Tag der Woche', 'Stunde']).sum()
+        groupedData = groupedData / 4
+        onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Netzeinspeisung", 0.3)
+        determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_feedin_24hours/", [24, 48, 72], 24, 1)
+
+    # forecast for complete days
+    if _calc7daysFeedIn:
+        groupedData = data.groupby(['Wochennummer', 'Tag der Woche']).sum()
+        groupedData = groupedData / 96
+        onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Netzeinspeisung", 0.3)
+        determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_feedin_1day/", [7, 14, 21], 7, 1)
+
+    print("###################### Tanzende Siedlung: Nezeinspeisung durch, berechne Gesamtverbrauch ##################")
+
+    # forecast on "plain" (ungrouped) data for the net 4 quarter hours
+    if _calc60minutesUsage:
+        onlyRelevantFactors = filterDataBasedOnKendallRanks(data, "Gesamtverbrauch", 0.3)
+        determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_usage_60minutes/", [4, 8, 12], 4, 1)
+
+    # forecast for next 24 hours on hourly basis
+    if _calc24hoursUsage:
+        data = data.apply(getHourFromTimestamp, axis=1)
+        groupedData = data.groupby(['Wochennummer', 'Tag der Woche', 'Stunde']).sum()
+        onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Gesamtverbrauch", 0.3)
+        determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_usage_24hours/", [24, 48, 72], 24, 1)
+
+    # forecast for complete days
+    if _calc7daysUsage:
+        groupedData = data.groupby(['Wochennummer', 'Tag der Woche']).sum()
+        onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Gesamtverbrauch", 0.3)
+        determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_usage_1day/", [7, 14, 21], 7, 1)
+
+# read parameters from command line and execute the requested analysis based on that
+def triggerAnalysisExecution():
+
+    # check parameters for alfons-pech-strasse
+    # convert input string to boolean array
+    apsParameters = sys.argv[1]
+    params = re.findall('.', apsParameters)
+    params = [int(num) == 1 for num in params]
+
+    # execute aps analysis
+    apsData = prepareAlfonsPechStrasseData()
+    determineOptimalParametersForAlfonsPechStrasse(apsData, params[0], params[1], params[2])
+
+    # check parameters for tanzende Siedlung
+    # convert input string to boolean array
+    tasParameters = sys.argv[2]
+    params = re.findall('.', tasParameters)
+    params = [int(num) == 1 for num in params]
+
+    tanzendeSiedlungData = prepareTanzendeSiedlungData()
+    determineOptimalParametersForTanzendeSiedlung(tanzendeSiedlungData, params[0], params[1], params[2], params[3], params[4], params[5])
+
+
+triggerAnalysisExecution()

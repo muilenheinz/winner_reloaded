@@ -20,9 +20,7 @@ from scipy.optimize import curve_fit
 import numpy as np
 from lmfit.models import StepModel, LinearModel
 import matplotlib.pyplot as plt
-
 from prepareData import *
-targetFilePath = ""
 
 # fix random seed for reproducibility
 np.random.seed(7)
@@ -33,6 +31,7 @@ np.random.seed(7)
 # @n_stepsIntoPast: based on how many past observations shall the prediction be done
 # @predict_index: which index in the data is the target size?
 def multivariateForecastNBackMForward(
+        targetFilePath,
         _data: pd.DataFrame,
         n_stepsIntoPast,
         n_stepsIntoFuture=1,
@@ -128,7 +127,7 @@ def multivariateForecastNBackMForward(
         targetCol = inv_y[:, targetColIndex]
         onlyTargetValueTestData[:, i] = targetCol
 
-    plotNForwardMBackwardsResults(inv_yhat, n_stepsIntoFuture, onlyTargetValuePredictions, onlyTargetValueTestData, _run, _modelNumber)
+    plotNForwardMBackwardsResults(inv_yhat, n_stepsIntoFuture, onlyTargetValuePredictions, onlyTargetValueTestData, _run, _modelNumber, targetFilePath)
 
     rmse = sqrt(mean_squared_error(onlyTargetValueTestData, onlyTargetValuePredictions))
     print("results for config lstm_units=", str(lstm_units), ", steps_forward = ", n_stepsIntoFuture, ", steps_backward=", n_stepsIntoPast, " batch_size=",  batch_size)
@@ -137,8 +136,7 @@ def multivariateForecastNBackMForward(
     return rmse
 
 
-def plotNForwardMBackwardsResults(inv_yhat, n_stepsIntoFuture, onlyTargetValuePredictions, onlyTargetValueTestData, _run, _modelNumber):
-    global targetFilePath
+def plotNForwardMBackwardsResults(inv_yhat, n_stepsIntoFuture, onlyTargetValuePredictions, onlyTargetValueTestData, _run, _modelNumber, targetFilePath):
 
     # plot the complete prediction series for the first three days as predicted at midnight from
     # the previous 24 hours
@@ -151,22 +149,13 @@ def plotNForwardMBackwardsResults(inv_yhat, n_stepsIntoFuture, onlyTargetValuePr
         # prepend None values to the day to display, so it is shifted against the previously printed day
         prependNoneData = np.zeros((n_stepsIntoFuture * i))
         prependNoneData[:] = None
-        printOneDayTestData = np.concatenate((prependNoneData, onlyTargetValueTestData[i * n_stepsIntoFuture, :]))
-        printOneDayPredictionData = np.concatenate((prependNoneData, onlyTargetValuePredictions[i * n_stepsIntoFuture, :]))
 
-        # pyplot.plot(printOneDayTestData, label='Originaldaten Tag' + str(i))
-        # pyplot.plot(printOneDayPredictionData, label='Vorhersagen Tag' + str(i))
-
-        # prepare to plot those forecasts in one line
+        # prepare to plot forecasts in one line
         plottableTestData = np.concatenate((plottableTestData, onlyTargetValueTestData[i * n_stepsIntoFuture, :]))
         plottablePredictionData = np.concatenate((plottablePredictionData, onlyTargetValuePredictions[i * n_stepsIntoFuture, :]))
 
     if loop_top < 3:
         pyplot.legend()
-
-    # store the plot on the first run as an image
-    # if _run == 0:
-    #     plt.savefig(targetFilePath + str(_modelNumber) + '_predictions_split.jpg', bbox_inches='tight', dpi=150)
 
     pyplot.show()
     pyplot.figure(1)
@@ -202,6 +191,7 @@ def getTimeCosFromTimestamp(datarow):
 
 
 def checkModuleParameters(
+        targetFilePath,
         _data: pd.DataFrame,
         n_stepsIntoPast,
         n_stepsIntoFuture=1,
@@ -213,7 +203,7 @@ def checkModuleParameters(
         _modelNumber=0,
         _epochs = 50,
         _lossFunction="mae"):
-    global targetFilePath
+
     rmse = np.array([0.0, 0.0, 0.0])
     executionTime = np.array([0.0, 0.0, 0.0])
 
@@ -221,6 +211,7 @@ def checkModuleParameters(
     for i in range(3):
         startTime = time.time()
         rmse[i] = multivariateForecastNBackMForward(
+            targetFilePath,
             _data,
             n_stepsIntoPast,
             n_stepsIntoFuture,
@@ -267,27 +258,6 @@ def checkModuleParameters(
     df.to_csv(file_path, sep=";", index=False)
 
 
-def determineOptimalParametersForAlfonsPechStrasse(data: pd.DataFrame):
-    print("-- calc predictions for Alfons-Pech-Strasse --")
-    data = data.astype("float")
-
-    # 60-Minute forecast on "plain" (ungrouped) data
-    # onlyRelevantFactors = filterDataBasedOnKendallRanks(data, "Messwert", 0.3)
-    # approximateFunctionToData(data)
-    # determineOptimalParametersForModel(onlyRelevantFactors, "../results/aps_regression_60minutes/", [30, 60, 120, 180], 60, 0, False)
-
-    # forecast for next 24 hours on hourly basis
-    data = data.apply(getHourFromTimestamp, axis=1)
-    groupedData = data.groupby(['Wochennummer', 'Tag der Woche', 'Stunde']).sum()
-    groupedData = groupedData / 60
-    onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Messwert", 0.3)
-    determineOptimalParametersForModel(onlyRelevantFactors, "../results/aps_regression_24hours/", [12, 48, 96], 24)
-
-    # forecast for complete days
-    groupedData = data.groupby(['Wochennummer', 'Tag der Woche']).sum()
-    groupedData = groupedData / 1440
-    onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Messwert", 0.3)
-    determineOptimalParametersForModel(onlyRelevantFactors, "../results/aps_regression_1day/", [7, 14, 21], 7)
 
 def function(x, a, b, c, d):
     return a*x**3 + b * x ** 2 + c * x + d
@@ -314,85 +284,8 @@ def approximateFunctionToData(_data: pd.DataFrame):
     print("Estimated value of b : " + str(b))
     plt.show()
 
-def determineOptimalParametersForTanzendeSiedlung(data: pd.DataFrame):
-    print("-- calc predictions for tanzende Siedlung --")
-    data = data.astype("float")
-
-    # forecast on "plain" (ungrouped) data for the net 4 quarter hours
-    onlyRelevantFactors = filterDataBasedOnKendallRanks(data, "Netzeinspeisung", 0.3)
-    determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_feedin_60minutes/", [4, 8, 12], 4, 1)
-
-    # forecast for next 24 hours on hourly basis
-    data = data.apply(getHourFromTimestamp, axis=1)
-    groupedData = data.groupby(['Wochennummer', 'Tag der Woche', 'Stunde']).sum()
-    groupedData = groupedData / 4
-    onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Netzeinspeisung", 0.3)
-    determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_feedin_24hours/", [24, 48, 72], 24, 1)
-
-    # forecast for complete days
-    groupedData = data.groupby(['Wochennummer', 'Tag der Woche']).sum()
-    groupedData = groupedData / 96
-    onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Netzeinspeisung", 0.3)
-    determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_feedin_1day/", [7, 14, 21], 7, 1)
-
-    print("###################### Tanzende Siedlung: Nezeinspeisung durch, berechne Gesamtverbrauch ##################")
-
-    # forecast on "plain" (ungrouped) data for the net 4 quarter hours
-    onlyRelevantFactors = filterDataBasedOnKendallRanks(data, "Gesamtverbrauch", 0.3)
-    determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_usage_60minutes/", [4, 8, 12], 4, 1)
-
-    # forecast for next 24 hours on hourly basis
-    data = data.apply(getHourFromTimestamp, axis=1)
-    groupedData = data.groupby(['Wochennummer', 'Tag der Woche', 'Stunde']).sum()
-    onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Gesamtverbrauch", 0.3)
-    determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_usage_24hours/", [24, 48, 72], 24, 1)
-
-    # forecast for complete days
-    groupedData = data.groupby(['Wochennummer', 'Tag der Woche']).sum()
-    onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Gesamtverbrauch", 0.3)
-    determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_usage_1day/", [7, 14, 21], 7, 1)
 
 
-# test all "plausible" values for the given factors
-def determineOptimalParametersForModel(onlyRelevantFactors, targetFile, stepsIntoPast, stepsIntoFuture, predictIndex=0, doFirstHalf = True):
-    global targetFilePath
-
-    targetFilePath = targetFile
-
-    # test number of units
-    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.2, 1, 100, "mae")
-    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 256, 128, 0.8, 0.2, 2, 100, "mae")
-    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 512, 128, 0.8, 0.2, 3, 100, "mae")
-    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 1024, 128, 0.8, 0.2, 4, 100, "mae")
-
-    # test batch_size
-    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 32, 0.8, 0.2, 5, 100, "mae")
-    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 64, 0.8, 0.2, 6, 100, "mae")
-    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.2, 7, 100, "mae")
-
-    # test dropout
-    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0, 9, 100, "mae")
-    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 10, 100, "mae")
-
-    # test optimization function
-    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 11, 100, "mse")
-    cosine_loss_fn = tf.keras.losses.CosineSimilarity(axis=1)
-    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 12, 100, cosine_loss_fn)
-
-    huber_loss = tf.keras.losses.Huber(delta=1.0, reduction="auto", name="huber_loss")
-    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 13, 100, huber_loss)
-    meanAbsolutePercentageError = tf.keras.losses.MeanAbsolutePercentageError(reduction="auto", name="mean_absolute_percentage_error")
-    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 14, 100, meanAbsolutePercentageError)
-    meanSquaredLogarithmicError = tf.keras.losses.MeanSquaredLogarithmicError(reduction="auto", name="mean_squared_logarithmic_error")
-    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 15, 100, meanSquaredLogarithmicError)
-    logCosh = tf.keras.losses.LogCosh(reduction="auto", name="log_cosh")
-    checkModuleParameters(onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 16, 100, logCosh)
-
-    # test steps into past
-    index = 0
-    for i in stepsIntoPast:
-        checkModuleParameters(onlyRelevantFactors, i, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.2, (17 + index), 100, "mae")
-        index += 1
 
 
 

@@ -1,7 +1,8 @@
 from prepareData import *
 from checkFeasibility import *
-from doPredictions import *
+from modelFunctions import *
 import pandas as pd
+import tensorflow as tf
 
 # Overview of weatherstations available here:
 # https://opendata.dwd.de/climate_environment/CDC/help/CS_Stundenwerte_Beschreibung_Stationen.txt
@@ -10,39 +11,35 @@ weatherStationIdJena = "02444"      # wheatherstationID Jena Sternwarte
 
 
 # check and prepare Data for Alfons-Pech-Straße, Chemnitz
-def calcAlfonsPechStrasse(_feasibilityAnalysis = True, _predictions = True):
-    print("######################## calculations for Alfons-Pech-Strasse #######################")
+def prepareAlfonsPechStrasseData():
+    print("######################## prepare data for Alfons-Pech-Strasse #######################")
 
     alfonsPechStrData = prepareData('../data/PV/APS_PV/', weatherStationIdChemnitz, True, ",", 1)
     alfonsPechStrData = dataCleaningAlfonsPechStrasse(alfonsPechStrData)
 
-    if _feasibilityAnalysis:
-        executeFeasibilityAnalysisalfonsPechStr(alfonsPechStrData, "red")
+    colNames = np.array((
+        "Zeitstempel",
+        "Messwert",
+        "Zeit (cos)",
+        "Tag der Woche",
+        "ist Wochenende",
+        "Wochennummer",
+        "ist Feiertag",
+        "sind Schulferien",
+        "DS_10",                # diffuse Himmelstrahlung 10min
+        "GS_10",                # globalstrahlung joule
+        "SD_10",                # sonnenscheindauer
+        "LS_10",                # Langwellige Strahlung
+        "RWS_DAU_10",           # Niederschlagsdauer 10min
+        "RWS_10",               # Summe der Niederschlagsh. der vorangeg.10Min
+        "RWS_IND_10",           # Niederschlagsindikator  10min
+    ))
 
-    if _predictions:
-        colNames = np.array((
-            "Zeitstempel",
-            "Messwert",
-            "Zeit (cos)",
-            "Tag der Woche",
-            "ist Wochenende",
-            "Wochennummer",
-            "ist Feiertag",
-            "sind Schulferien",
-            "DS_10",                # diffuse Himmelstrahlung 10min
-            "GS_10",                # globalstrahlung joule
-            "SD_10",                # sonnenscheindauer
-            "LS_10",                # Langwellige Strahlung
-            "RWS_DAU_10",           # Niederschlagsdauer 10min
-            "RWS_10",               # Summe der Niederschlagsh. der vorangeg.10Min
-            "RWS_IND_10",           # Niederschlagsindikator  10min
-        ))
-
-        alfonsPechStrData = convertArrayToDataFrame(alfonsPechStrData, colNames)
-        determineOptimalParametersForAlfonsPechStrasse(alfonsPechStrData)
+    alfonsPechStrData = convertArrayToDataFrame(alfonsPechStrData, colNames)
+    return alfonsPechStrData
 
 # chak and prepare Data for tanzende Siedlung, Chemnitz
-def calcTanzendeSiedlung(_feasibilityAnalysis = True, _predictions = True):
+def prepareTanzendeSiedlungData():
     print("######################## calculations for tanzende Siedlung #######################")
     tanzendeSiedlungData = prepareData('../data/TAS/inetz/', weatherStationIdChemnitz, True, ";", 2)
 
@@ -55,36 +52,35 @@ def calcTanzendeSiedlung(_feasibilityAnalysis = True, _predictions = True):
     for i in removeCols:
         tanzendeSiedlungData = np.delete(tanzendeSiedlungData, i, 1)
 
-    if _feasibilityAnalysis:
-        executeFeasibilityAnalysistanzendeSiedlung(tanzendeSiedlungData, True, True, True, True, "cornflowerblue")
+    # if _feasibilityAnalysis:
+    #     executeFeasibilityAnalysistanzendeSiedlung(tanzendeSiedlungData, True, True, True, True, "cornflowerblue")
 
-    if _predictions:
-        colNames = np.array((
-            "Zeitstempel",
-            "Netzbezug",
-            "Netzeinspeisung",
-            "Bezug PV-Analge",
-            "PV-Einspeisung",
-            "Zeit (cos)",
-            "Tag der Woche",
-            "ist Wochenende",
-            "Wochennummer",
-            "ist Feiertag",
-            "sind Schulferien",
-            "DS_10", # diffuse Himmelstrahlung 10min
-            "GS_10", #globalstrahlung joule
-            "SD_10", #sonnenscheindauer
-            "LS_10",# Langwellige Strahlung
-            "RWS_DAU_10", #Niederschlagsdauer 10min
-            "RWS_10", #Summe der Niederschlagsh. der vorangeg.10Min
-            "RWS_IND_10", #Niederschlagsindikator  10min
-            "Gesamtverbrauch",
-            "Mieteranzahl"
-        ))
+    # if _predictions:
+    colNames = np.array((
+        "Zeitstempel",
+        "Netzbezug",
+        "Netzeinspeisung",
+        "Bezug PV-Analge",
+        "PV-Einspeisung",
+        "Zeit (cos)",
+        "Tag der Woche",
+        "ist Wochenende",
+        "Wochennummer",
+        "ist Feiertag",
+        "sind Schulferien",
+        "DS_10", # diffuse Himmelstrahlung 10min
+        "GS_10", #globalstrahlung joule
+        "SD_10", #sonnenscheindauer
+        "LS_10",# Langwellige Strahlung
+        "RWS_DAU_10", #Niederschlagsdauer 10min
+        "RWS_10", #Summe der Niederschlagsh. der vorangeg.10Min
+        "RWS_IND_10", #Niederschlagsindikator  10min
+        "Gesamtverbrauch",
+        "Mieteranzahl"
+    ))
 
-        tanzendeSiedlungData = convertArrayToDataFrame(tanzendeSiedlungData, colNames)
-        determineOptimalParametersForTanzendeSiedlung(tanzendeSiedlungData)
-        print("debug")
+    tanzendeSiedlungData = convertArrayToDataFrame(tanzendeSiedlungData, colNames)
+    return tanzendeSiedlungData
 
 # calcAlfonsPechStrasse(False, True)
-calcTanzendeSiedlung(False, True)
+# calcTanzendeSiedlung(False, True)
