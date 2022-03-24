@@ -53,7 +53,7 @@ def determineOptimalParametersForAlfonsPechStrasse(data: pd.DataFrame, _calc60Mi
     if _calc60MinuteModel:
         onlyRelevantFactors = filterDataBasedOnKendallRanks(data, "Messwert", 0.3)
         approximateFunctionToData(data)
-        determineOptimalParametersForModel(onlyRelevantFactors, "../results/aps_regression_60minutes/", [30, 60, 120, 180], 60, 0, False)
+        determineOptimalParametersForModel(onlyRelevantFactors, "../results/aps_regression_60minutes/aps_60min_", [30, 60, 120, 180], 60, 0, False)
 
     # forecast for next 24 hours on hourly basis
     if _calc24HourModel:
@@ -61,14 +61,14 @@ def determineOptimalParametersForAlfonsPechStrasse(data: pd.DataFrame, _calc60Mi
         groupedData = data.groupby(['Wochennummer', 'Tag der Woche', 'Stunde']).sum()
         groupedData = groupedData / 60
         onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Messwert", 0.3)
-        determineOptimalParametersForModel(onlyRelevantFactors, "../results/aps_regression_24hours/", [12, 48, 96], 24)
+        determineOptimalParametersForModel(onlyRelevantFactors, "../results/aps_regression_24hours/aps_24h_", [12, 48, 96], 24)
 
     # forecast for complete days
     if _calc7DaysModel:
         groupedData = data.groupby(['Wochennummer', 'Tag der Woche']).sum()
         groupedData = groupedData / 1440
         onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Messwert", 0.3)
-        determineOptimalParametersForModel(onlyRelevantFactors, "../results/aps_regression_1day/", [7, 14, 21], 7)
+        determineOptimalParametersForModel(onlyRelevantFactors, "../results/aps_regression_7days/aps_1day_", [7, 14, 21], 7)
 
 def determineOptimalParametersForTanzendeSiedlung(
         data: pd.DataFrame,
@@ -85,7 +85,7 @@ def determineOptimalParametersForTanzendeSiedlung(
     # forecast on "plain" (ungrouped) data for the net 4 quarter hours
     if _calc60minutesFeedIn:
         onlyRelevantFactors = filterDataBasedOnKendallRanks(data, "Netzeinspeisung", 0.3)
-        determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_feedin_60minutes/", [4, 8, 12], 4, 1)
+        determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_feedin_60minutes/ts_feedIn_60min_", [4, 8, 12], 4, 1)
 
     # forecast for next 24 hours on hourly basis
     if _calc24hoursFeedIn:
@@ -93,34 +93,34 @@ def determineOptimalParametersForTanzendeSiedlung(
         groupedData = data.groupby(['Wochennummer', 'Tag der Woche', 'Stunde']).sum()
         groupedData = groupedData / 4
         onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Netzeinspeisung", 0.3)
-        determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_feedin_24hours/", [24, 48, 72], 24, 1)
+        determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_feedin_24hours/ts_feedIn_24h_", [24, 48, 72], 24, 1)
 
     # forecast for complete days
     if _calc7daysFeedIn:
         groupedData = data.groupby(['Wochennummer', 'Tag der Woche']).sum()
         groupedData = groupedData / 96
         onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Netzeinspeisung", 0.3)
-        determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_feedin_1day/", [7, 14, 21], 7, 1)
+        determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_feedin_7days/ts_feedIn_7days_", [7, 14, 21], 7, 1)
 
     print("###################### Tanzende Siedlung: Nezeinspeisung durch, berechne Gesamtverbrauch ##################")
 
     # forecast on "plain" (ungrouped) data for the net 4 quarter hours
     if _calc60minutesUsage:
         onlyRelevantFactors = filterDataBasedOnKendallRanks(data, "Gesamtverbrauch", 0.3)
-        determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_usage_60minutes/", [4, 8, 12], 4, 1)
+        determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_usage_60minutes/ts_usage_60min_", [4, 8, 12], 4, 1)
 
     # forecast for next 24 hours on hourly basis
     if _calc24hoursUsage:
         data = data.apply(getHourFromTimestamp, axis=1)
         groupedData = data.groupby(['Wochennummer', 'Tag der Woche', 'Stunde']).sum()
         onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Gesamtverbrauch", 0.3)
-        determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_usage_24hours/", [24, 48, 72], 24, 1)
+        determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_usage_24hours/ts_usage_24h_", [24, 48, 72], 24, 1)
 
     # forecast for complete days
     if _calc7daysUsage:
         groupedData = data.groupby(['Wochennummer', 'Tag der Woche']).sum()
         onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Gesamtverbrauch", 0.3)
-        determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_usage_1day/", [7, 14, 21], 7, 1)
+        determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_usage_7days/ts_usage_7days_", [7, 14, 21], 7, 1)
 
 # read parameters from command line and execute the requested analysis based on that
 def triggerAnalysisExecution():

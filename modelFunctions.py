@@ -94,6 +94,7 @@ def multivariateForecastNBackMForward(
                 )
 
     # plot history
+    pyplot.figure(targetFilePath + str(_modelNumber) + "losses")
     pyplot.plot(history.history['loss'], label='train loss')
     pyplot.plot(history.history['val_loss'], label='test loss')
     plt.legend(loc='upper right')
@@ -127,7 +128,8 @@ def multivariateForecastNBackMForward(
         targetCol = inv_y[:, targetColIndex]
         onlyTargetValueTestData[:, i] = targetCol
 
-    plotNForwardMBackwardsResults(inv_yhat, n_stepsIntoFuture, onlyTargetValuePredictions, onlyTargetValueTestData, _run, _modelNumber, targetFilePath)
+    if _run == 0:
+        plotNForwardMBackwardsResults(inv_yhat, n_stepsIntoFuture, onlyTargetValuePredictions, onlyTargetValueTestData, _run, _modelNumber, targetFilePath)
 
     rmse = sqrt(mean_squared_error(onlyTargetValueTestData, onlyTargetValuePredictions))
     print("results for config lstm_units=", str(lstm_units), ", steps_forward = ", n_stepsIntoFuture, ", steps_backward=", n_stepsIntoPast, " batch_size=",  batch_size)
@@ -143,7 +145,7 @@ def plotNForwardMBackwardsResults(inv_yhat, n_stepsIntoFuture, onlyTargetValuePr
     loop_top = int(inv_yhat.shape[0] / n_stepsIntoFuture)
     plottableTestData = np.zeros((1))
     plottablePredictionData = np.zeros((1))
-    pyplot.figure(0)
+    # pyplot.figure(targetFilePath + str(_modelNumber) + "forecasts")
     for i in range(loop_top):
         # plot the forecasts as sepearted values
         # prepend None values to the day to display, so it is shifted against the previously printed day
@@ -154,24 +156,13 @@ def plotNForwardMBackwardsResults(inv_yhat, n_stepsIntoFuture, onlyTargetValuePr
         plottableTestData = np.concatenate((plottableTestData, onlyTargetValueTestData[i * n_stepsIntoFuture, :]))
         plottablePredictionData = np.concatenate((plottablePredictionData, onlyTargetValuePredictions[i * n_stepsIntoFuture, :]))
 
-    if loop_top < 3:
-        pyplot.legend()
-
-    pyplot.show()
-    pyplot.figure(1)
+    pyplot.figure(targetFilePath + str(_modelNumber) + "forecasts")
 
     # plot all lines as one in one chart
     pyplot.plot(plottableTestData, label='Originaldaten')
     pyplot.plot(plottablePredictionData, label='Vorhersagen')
     pyplot.legend()
-    if _run == 0:
-        plt.savefig(targetFilePath + str(_modelNumber) + '_predictions.jpg', bbox_inches='tight', dpi=150)
-    pyplot.show()
-
-    pyplot.figure(2)
-    pyplot.plot(plottableTestData[:96], label='Originaldaten')
-    pyplot.plot(plottablePredictionData[:96], label='Vorhersagen')
-    pyplot.legend()
+    plt.savefig(targetFilePath + str(_modelNumber) + '_predictions.jpg', bbox_inches='tight', dpi=150)
     pyplot.show()
 
     plt.clf()
