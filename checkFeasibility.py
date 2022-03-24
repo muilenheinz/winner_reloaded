@@ -172,27 +172,21 @@ def executeFeasibilityAnalysisalfonsPechStr(_data: np.array, _color):
     global plotColor
     plotColor = _color
 
-    # the first three days
-    threeDaysTimestampData = np.array(_data[:4044,0], dtype=float)  # 4169 = 4320 () 3 days - 151 values missing for the first day
-    threeDaysMeasuremntData = np.array(_data[:4044,1], dtype=float)
     # all available data
     allDaysTimestampData = np.array(_data[:,0], dtype=float)
     allDaysMeasurementData = np.array(_data[:,1], dtype=float)
 
     # draw the plain production data
-    plotTimeSeries(threeDaysMeasuremntData, threeDaysTimestampData, "Produktionsdaten", "line")
     plotTimeSeries(allDaysMeasurementData, allDaysTimestampData, "Produktionsdaten", "line")
 
     # check the autocorrelations
-    # calcAutocorrelation(threeDaysMeasuremntData, None)
-    # calcAutocorrelation(allDaysMeasurementData, None)
-    #
-    # # check the difference values
-    # calcDifferenceSeries(threeDaysMeasuremntData, threeDaysTimestampData)
-    # calcDifferenceSeries(allDaysMeasurementData, allDaysTimestampData)
-    #
-    # dataWithoutTimestamp = deleteColFromNpArray(_data, 0)
-    # calcKendallCoefficients(dataWithoutTimestamp, 0, "Erzeugung", np.array(("Erzeugung"))) # from prepareData.py
+    calcAutocorrelation(allDaysMeasurementData, None)
+
+    # check the difference values
+    calcDifferenceSeries(allDaysMeasurementData, allDaysTimestampData)
+
+    dataWithoutTimestamp = deleteColFromNpArray(_data, 0)
+    calcKendallCoefficients(dataWithoutTimestamp, 0, "Erzeugung", np.array(("Erzeugung"))) # from prepareData.py
 
 def executeFeasibilityAnalysistanzendeSiedlung(
         _data: np.array,
@@ -258,3 +252,9 @@ def executeFeasibilityAnalysistanzendeSiedlung(
 
         calcKendallCoefficients(dataWithoutTimestamp, 2, labels["PVFeedIn"], colnames, postColNames)
         calcKendallCoefficients(dataWithoutTimestamp, 17, labels["overallConsumption"], colnames, postColNames)
+
+apsData = prepareAlfonsPechStrasseData()
+executeFeasibilityAnalysisalfonsPechStr(apsData.values, "red")
+
+tasData = prepareTanzendeSiedlungData()
+executeFeasibilityAnalysistanzendeSiedlung(tasData.values, True, True, True, True, "blue")
