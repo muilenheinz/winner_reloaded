@@ -53,7 +53,7 @@ def determineOptimalParametersForAlfonsPechStrasse(data: pd.DataFrame, _calc60Mi
     if _calc60MinuteModel:
         onlyRelevantFactors = filterDataBasedOnKendallRanks(data, "Messwert", 0.3)
         approximateFunctionToData(data)
-        determineOptimalParametersForModel(onlyRelevantFactors, "../results/aps_regression_60minutes/aps_60min_", [30, 60, 120, 180], 60, 0, False)
+        determineOptimalParametersForModel(onlyRelevantFactors, "../results/aps_regression_60minutes/aps_60min_", [30, 60, 120, 180], 60, 0)
 
     # forecast for next 24 hours on hourly basis
     if _calc24HourModel:
