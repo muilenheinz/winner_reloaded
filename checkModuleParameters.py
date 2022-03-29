@@ -3,10 +3,7 @@ import tensorflow as tf
 import sys
 import re
 
-from prepareData import *
 from modelFunctions import *
-from main import *
-
 
 # test all "plausible" values for the given factors
 def determineOptimalParametersForModel(onlyRelevantFactors, _targetFilePath, stepsIntoPast, stepsIntoFuture, predictIndex=0):
@@ -52,7 +49,6 @@ def determineOptimalParametersForAlfonsPechStrasse(data: pd.DataFrame, _calc60Mi
     # 60-Minute forecast on "plain" (ungrouped) data
     if _calc60MinuteModel:
         onlyRelevantFactors = filterDataBasedOnKendallRanks(data, "Messwert", 0.3)
-        approximateFunctionToData(data)
         determineOptimalParametersForModel(onlyRelevantFactors, "../results/aps_regression_60minutes/aps_60min_", [30, 60, 120, 180], 60, 0)
 
     # forecast for next 24 hours on hourly basis

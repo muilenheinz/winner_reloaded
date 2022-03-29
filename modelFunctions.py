@@ -100,7 +100,6 @@ def multivariateForecastNBackMForward(
     plt.legend(loc='upper right')
     if _run == 0:
         plt.savefig(targetFilePath + str(_modelNumber) + '_loss.jpg', bbox_inches='tight', dpi=150)
-    pyplot.show()
 
     # make a prediction
     yhat = model.predict(test_X)
@@ -164,8 +163,6 @@ def plotNForwardMBackwardsResults(inv_yhat, n_stepsIntoFuture, onlyTargetValuePr
     pyplot.legend()
     plt.savefig(targetFilePath + str(_modelNumber) + '_predictions.jpg', bbox_inches='tight', dpi=150)
     pyplot.show()
-
-    plt.clf()
 
 
 def getHourFromTimestamp(datarow):
