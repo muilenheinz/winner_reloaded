@@ -78,7 +78,7 @@ def multivariateForecastNBackMForward(
     model.add(Dense(n_stepsIntoFuture * n_features))
     model.compile(loss=_lossFunction, optimizer='adam')
 
-    earlyStopping = EarlyStopping(monitor='val_loss', patience=20, mode='min', verbose=1)
+    earlyStopping = EarlyStopping(monitor='val_loss', patience=75, mode='min', verbose=1)
 
     # fit network
     print("train the model...")
