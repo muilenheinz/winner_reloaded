@@ -39,15 +39,16 @@ def createReusltChart(sourceFilePath, targetFilePath):
         axis.set_title("Schritte in die Vergangenheit")
 
 
-        # plot optimization function
-        lossFunctions = data.loc[9:14, "lossFunction"]
+        # plot optimization function results
+        lossFunctions = data.loc[8:14, "lossFunction"]
         replaceDict = {
+                "mae": "Mean \n average \n error",
                 "<keras.losses.CosineSimilarity object ": "Cosine \n similarity",
                 "<keras.losses.Huber object ": "Huber loss",
-                "<keras.losses.MeanAbsolutePercentageError ": "Mean Absolute \n Percentage \nError",
-                "<keras.losses.MeanSquaredLogarithmicError ": "Mean Squared \n Logarithmic \nError",
+                "<keras.losses.MeanAbsolutePercentageError ": "Mean \n Absolute \n Percentage \nError",
+                "<keras.losses.MeanSquaredLogarithmicError ": "Mean \n Squared \n Logarithmic \nError",
                 "<keras.losses.LogCosh object": "Log Cosh",
-                "mse": "Mean squared \n error"
+                "mse": "Mean \n squared \n error"
         }
 
         # replace keys of the function with readable names
@@ -58,7 +59,7 @@ def createReusltChart(sourceFilePath, targetFilePath):
                                 lossFunctions.iloc[index] = replaceDict[replaceEntry]
 
         axis = plt.subplot(gs[1, 1:])
-        axis.bar(data.loc[9:14, "lossFunction"], data.loc[9:14, "Durchschnitt"])
+        axis.bar(data.loc[8:14, "lossFunction"], data.loc[8:14, "Durchschnitt"])
         axis.set_title("Optimierungsfunktionen")
 
         plt.tight_layout
