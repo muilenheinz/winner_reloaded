@@ -78,7 +78,7 @@ def multivariateForecastNBackMForward(
     model.add(Dense(n_stepsIntoFuture * n_features))
     model.compile(loss=_lossFunction, optimizer='adam')
 
-    # earlyStopping = EarlyStopping(monitor='val_loss', patience=20, mode='min', verbose=1)
+    earlyStopping = EarlyStopping(monitor='val_loss', patience=20, mode='min', verbose=1)
 
     # fit network
     print("train the model...")
@@ -90,7 +90,7 @@ def multivariateForecastNBackMForward(
                     validation_data=(test_X, test_y),
                     verbose=1,
                     shuffle=False,
-                    # callbacks=[earlyStopping]
+                    callbacks=[earlyStopping]
                 )
 
     # plot history
@@ -131,10 +131,11 @@ def multivariateForecastNBackMForward(
         plotNForwardMBackwardsResults(inv_yhat, n_stepsIntoFuture, onlyTargetValuePredictions, onlyTargetValueTestData, _run, _modelNumber, targetFilePath)
 
     rmse = sqrt(mean_squared_error(onlyTargetValueTestData, onlyTargetValuePredictions))
+    epochs = len(history.history['loss'])
     print("results for config lstm_units=", str(lstm_units), ", steps_forward = ", n_stepsIntoFuture, ", steps_backward=", n_stepsIntoPast, " batch_size=",  batch_size)
     print('RMSE of test data: %.3f' % rmse)
 
-    return rmse
+    return [rmse, epochs]
 
 
 def plotNForwardMBackwardsResults(inv_yhat, n_stepsIntoFuture, onlyTargetValuePredictions, onlyTargetValueTestData, _run, _modelNumber, targetFilePath):
@@ -193,12 +194,13 @@ def checkModuleParameters(
         _lossFunction="mae"):
 
     rmse = np.array([0.0, 0.0, 0.0])
+    epochs = np.array([0.0, 0.0, 0.0])
     executionTime = np.array([0.0, 0.0, 0.0])
 
     # execute model 3 times
     for i in range(3):
         startTime = time.time()
-        rmse[i] = multivariateForecastNBackMForward(
+        result = multivariateForecastNBackMForward(
             targetFilePath,
             _data,
             n_stepsIntoPast,
@@ -213,6 +215,8 @@ def checkModuleParameters(
             i,
             _lossFunction
         )
+        rmse[i] = result[0]
+        epochs[i] = result[1]
         executionTime[i] = (time.time() - startTime)
 
     averageRMSE = np.sum(rmse) / 3
@@ -240,7 +244,8 @@ def checkModuleParameters(
         "Run 2": rmse[1],
         "Run 3": rmse[2],
         "Durchschnitt": averageRMSE,
-        "lossFunction": _lossFunction
+        "lossFunction": _lossFunction,
+        "epochs": epochs
     }
     df = df.append(newEntry, ignore_index=True)
     df.to_csv(file_path, sep=";", index=False)

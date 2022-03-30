@@ -8,33 +8,33 @@ from modelFunctions import *
 # test all "plausible" values for the given factors
 def determineOptimalParametersForModel(onlyRelevantFactors, _targetFilePath, stepsIntoPast, stepsIntoFuture, predictIndex=0):
     # test number of units
-    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.2, 1, 100, "mae")
-    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 256, 128, 0.8, 0.2, 2, 100, "mae")
-    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 512, 128, 0.8, 0.2, 3, 100, "mae")
-    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 1024, 128, 0.8, 0.2, 4, 100, "mae")
+    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.2, 1, 1000, "mae")
+    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 256, 128, 0.8, 0.2, 2, 1000, "mae")
+    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 512, 128, 0.8, 0.2, 3, 1000, "mae")
+    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 1024, 128, 0.8, 0.2, 4, 1000, "mae")
 
     # test batch_size
-    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 32, 0.8, 0.2, 5, 100, "mae")
-    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 64, 0.8, 0.2, 6, 100, "mae")
-    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.2, 7, 100, "mae")
+    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 32, 0.8, 0.2, 5, 1000, "mae")
+    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 64, 0.8, 0.2, 6, 1000, "mae")
+    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.2, 7, 1000, "mae")
 
     # test dropout
-    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0, 9, 100, "mae")
-    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 10, 100, "mae")
+    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0, 9, 1000, "mae")
+    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 10, 1000, "mae")
 
     # test optimization function
-    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 11, 100, "mse")
+    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 11, 1000, "mse")
     cosine_loss_fn = tf.keras.losses.CosineSimilarity(axis=1)
-    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 12, 100, cosine_loss_fn)
+    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 12, 1000, cosine_loss_fn)
 
     huber_loss = tf.keras.losses.Huber(delta=1.0, reduction="auto", name="huber_loss")
-    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 13, 100, huber_loss)
+    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 13, 1000, huber_loss)
     meanAbsolutePercentageError = tf.keras.losses.MeanAbsolutePercentageError(reduction="auto", name="mean_absolute_percentage_error")
-    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 14, 100, meanAbsolutePercentageError)
+    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 14, 1000, meanAbsolutePercentageError)
     meanSquaredLogarithmicError = tf.keras.losses.MeanSquaredLogarithmicError(reduction="auto", name="mean_squared_logarithmic_error")
-    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 15, 100, meanSquaredLogarithmicError)
+    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 15, 1000, meanSquaredLogarithmicError)
     logCosh = tf.keras.losses.LogCosh(reduction="auto", name="log_cosh")
-    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 16, 100, logCosh)
+    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.1, 16, 1000, logCosh)
 
     # test steps into past
     index = 0
