@@ -1,10 +1,12 @@
 from prepareData import *
 from modelFunctions import *
 
-runs = 2
+runs = 1
 
 # define optimization functions
 huber_loss = tf.keras.losses.Huber(delta=1.0, reduction="auto", name="huber_loss")
+meanAbsolutePercentageError = tf.keras.losses.MeanAbsolutePercentageError(reduction="auto", name="mean_absolute_percentage_error")
+cosine_similarity = tf.keras.losses.CosineSimilarity(axis=1)
 
 def calcModelsForAlfonsPechStrasse():
     # prepare data
@@ -34,10 +36,46 @@ def calcModelsForAlfonsPechStrasse():
     groupedData = apsData.groupby(['Wochennummer', 'Tag der Woche']).sum()
     groupedData = groupedData / 1440
     onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Messwert", 0.3)
-    url = "../results/finalModels/aps_24h"
+    url = "../results/finalModels/aps_7d"
     multivariateForecastNBackMForward(
         url, onlyRelevantFactors,
         7, 7, 0, 100, 128, 0.8, 0.2, 0, runs, 0, "mse", url + "_weights"
     )
 
-calcModelsForAlfonsPechStrasse()
+def calcModelsForTanzendeSiedlung():
+    # prepare data
+    tasData = prepareTanzendeSiedlungData()
+    tasData = tasData.astype("float")
+    tasData = tasData.apply(getHourFromTimestamp, axis=1)
+
+    # forecast 60 minute feedIn
+    onlyRelevantFactors = filterDataBasedOnKendallRanks(tasData, "Netzeinspeisung", 0.3)
+    url = "../results/finalModels/tas_60min_feedin"
+    multivariateForecastNBackMForward(
+        url, onlyRelevantFactors,
+        4, 4, 0, 100, 128, 0.8, 0.2, 0, runs, 0, "mae", url + "_weights"
+    )
+
+    # forecast 24 hour feedIn
+    groupedData24Hours = tasData.groupby(['Wochennummer', 'Tag der Woche', 'Stunde']).sum()
+    groupedData24Hours = groupedData24Hours / 4
+    onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData24Hours, "Netzeinspeisung", 0.3)
+    url = "../results/finalModels/tas_24h_feedin"
+    multivariateForecastNBackMForward(
+        url, onlyRelevantFactors,
+        24, 24, 0, 100, 128, 0.8, 0.2, 0, runs, 0, meanAbsolutePercentageError, url + "_weights"
+    )
+
+    # forecast 7 days feedin
+    groupedData7Days = tasData.groupby(['Wochennummer', 'Tag der Woche']).sum()
+    groupedData7Days = groupedData7Days / 96
+    onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData7Days, "Netzeinspeisung", 0.3)
+    url = "../results/finalModels/tas_7d_feedin"
+    multivariateForecastNBackMForward(
+        url, onlyRelevantFactors,
+        24, 24, 0, 100, 128, 0.8, 0.2, 0, runs, 0, cosine_similarity, url + "_weights"
+    )
+
+
+# calcModelsForAlfonsPechStrasse()
+calcModelsForTanzendeSiedlung()
