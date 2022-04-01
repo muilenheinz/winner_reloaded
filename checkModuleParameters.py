@@ -103,20 +103,20 @@ def determineOptimalParametersForTanzendeSiedlung(
     # forecast on "plain" (ungrouped) data for the next 4 quarter hours
     if _calc60minutesUsage:
         onlyRelevantFactors = filterDataBasedOnKendallRanks(data, "Gesamtverbrauch", 0.3)
-        determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_usage_60minutes/ts_usage_60min_", [4, 8, 12], 4, 7)
+        determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_usage_60minutes/ts_usage_60min_", [4, 8, 12], 4, 6)
 
     # forecast for next 24 hours on hourly basis
     if _calc24hoursUsage:
         data = data.apply(getHourFromTimestamp, axis=1)
         groupedData = data.groupby(['Wochennummer', 'Tag der Woche', 'Stunde']).sum()
         onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Gesamtverbrauch", 0.3)
-        determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_usage_24hours/ts_usage_24h_", [24, 48, 72], 24, 7)
+        determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_usage_24hours/ts_usage_24h_", [24, 48, 72], 24, 6)
 
     # forecast for complete days
     if _calc7daysUsage:
         groupedData = data.groupby(['Wochennummer', 'Tag der Woche']).sum()
         onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Gesamtverbrauch", 0.3)
-        determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_usage_7days/ts_usage_7days_", [7, 14, 21], 7, 7)
+        determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_usage_7days/ts_usage_7days_", [7, 14, 21], 7, 6)
 
 # read parameters from command line and execute the requested analysis based on that
 def triggerAnalysisExecution():
