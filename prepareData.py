@@ -293,25 +293,25 @@ def addWeatherdata(data: np.array):
 # helper function for addWeatherdata; saves the given solarWeatherdata to the given row
 def setSolarDataToRow(solarWeatherdata, roundedDate, line):
     DS_10 = solarWeatherdata[roundedDate][3] # diffuse Himmelstrahlung 10min
-    if DS_10 != -999:
+    if int(Decimal(DS_10)) != -999:
         line[-7] = DS_10
     else:
         line[-7] = 0
 
     GS_10 = solarWeatherdata[roundedDate][4] # Globalstrahlung 10min
-    if GS_10 != -999:
+    if int(Decimal(GS_10)) != -999:
         line[-6] = GS_10
     else:
         line[-6] = 0
 
     SD_10 = solarWeatherdata[roundedDate][5] # Sonnenscheindauer 10min
-    if SD_10 != -999:
+    if int(Decimal(SD_10)) != -999:
         line[-5] = SD_10
     else:
         line[-5] = 0
 
     LS_10 = solarWeatherdata[roundedDate][6] # Langwellige Strahlung 10min
-    if LS_10 != "-999":
+    if int(Decimal(LS_10)) != -999:
         line[-4] = LS_10
     else:
         line[-4] = 0
@@ -320,19 +320,19 @@ def setSolarDataToRow(solarWeatherdata, roundedDate, line):
 def setprecipitationDataToRow(precipitationWeatherdata, roundedDate, line):
     if roundedDate in precipitationWeatherdata:
         RWS_DAU_10 = precipitationWeatherdata[roundedDate][3] # Niederschlagsdauer 10min
-        if RWS_DAU_10 != -999:
+        if int(Decimal(RWS_DAU_10)) != -999:
             line[-3] = RWS_DAU_10
         else:
             line[-3] = 0
 
         RWS_10 = precipitationWeatherdata[roundedDate][4] # Summe der Niederschlagsh. der vorangeg.10Min
-        if RWS_10 != -999:
+        if int(Decimal(RWS_10)) != -999:
             line[-2] = RWS_10
         else:
             line[-2] = 0
 
         RWS_IND_10 = precipitationWeatherdata[roundedDate][5] # Niederschlagsindikator  10min
-        if RWS_IND_10 != -999:
+        if int(Decimal(RWS_IND_10)) != -999:
             line[-1] = RWS_IND_10
         else:
             line[-1] = 0
