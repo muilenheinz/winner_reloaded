@@ -48,14 +48,14 @@ def calcModelsForAlfonsPechStrasse():
     # 60 minute forecast
     onlyRelevantFactors = filterDataBasedOnKendallRanks(apsData, "Messwert", 0.3)
     checkModuleParameters(
-        baseURL + "aps_60min", onlyRelevantFactors, 60, 60, 0, 100, 128, 0.8, 0.2, 0, 3, "mae",
+        baseURL + "aps_60min", onlyRelevantFactors, 60, 60, 0, 100, 128, 0.8, 0.2, 0, 1000, "mae",
         baseURL + "aps_60min_weights", timestamps, "%d.%m \n %H:%M"
     )
 
     # 24 hours forecast
     onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData24Hours, "Messwert", 0.3)
     checkModuleParameters(
-        baseURL + "aps_24h", onlyRelevantFactors, 24, 24, 0, 100, 128, 0.8, 0.2, 1, 3, huber_loss,
+        baseURL + "aps_24h", onlyRelevantFactors, 24, 24, 0, 100, 128, 0.8, 0.2, 1, 1000, huber_loss,
         baseURL + "aps_24h_weights", timestamps24Hours, "%d.%m \n %H:%M"
     )
 
@@ -63,7 +63,7 @@ def calcModelsForAlfonsPechStrasse():
     onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData7Days, "Messwert", 0.3)
     # use 67% as train data to have at least one prediction to visualize
     checkModuleParameters(
-        baseURL + "aps_7d", onlyRelevantFactors, 7, 7, 0, 100, 128, 0.67, 0.2, 2, 3, "mse",
+        baseURL + "aps_7d", onlyRelevantFactors, 7, 7, 0, 100, 128, 0.67, 0.2, 2, 1000, "mse",
         baseURL + "aps_7d_weights", timestamps7Days, "%a \n %d.%m"
     )
 
