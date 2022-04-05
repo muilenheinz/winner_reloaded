@@ -21,6 +21,7 @@ import numpy as np
 from lmfit.models import StepModel, LinearModel
 import matplotlib.pyplot as plt
 from prepareData import *
+import matplotlib.dates as mdates
 
 # fix random seed for reproducibility
 np.random.seed(7)
@@ -30,6 +31,7 @@ np.random.seed(7)
 # @dataset with target and influencing factors
 # @n_stepsIntoPast: based on how many past observations shall the prediction be done
 # @predict_index: which index in the data is the target size?
+# @saveWeights: False when not required, path to folder to store weights in when required
 def multivariateForecastNBackMForward(
         targetFilePath,
         _data: pd.DataFrame,
@@ -43,7 +45,10 @@ def multivariateForecastNBackMForward(
         _modelNumber=0,
         _epochs=50,
         _run=0,
-        _lossFunction="mae"
+        _lossFunction="mae",
+        _saveWeights=False,
+        _plotLegendItems=False,
+        _plotDateFormat="%d.%m"
 ):
     n_features = _data.shape[1]  # count number of influencing factors
     data = np.array(_data, dtype=float)
@@ -101,6 +106,10 @@ def multivariateForecastNBackMForward(
     if _run == 0:
         plt.savefig(targetFilePath + str(_modelNumber) + '_loss.jpg', bbox_inches='tight', dpi=150)
 
+        # save model weights
+        if _saveWeights != False:
+            model.save(_saveWeights)
+
     # make a prediction
     yhat = model.predict(test_X)
 
@@ -128,7 +137,7 @@ def multivariateForecastNBackMForward(
         onlyTargetValueTestData[:, i] = targetCol
 
     if _run == 0:
-        plotNForwardMBackwardsResults(inv_yhat, n_stepsIntoFuture, onlyTargetValuePredictions, onlyTargetValueTestData, _run, _modelNumber, targetFilePath)
+        plotNForwardMBackwardsResults(inv_yhat, n_stepsIntoFuture, onlyTargetValuePredictions, onlyTargetValueTestData, _run, _modelNumber, targetFilePath, _plotLegendItems, _plotDateFormat)
 
     rmse = sqrt(mean_squared_error(onlyTargetValueTestData, onlyTargetValuePredictions))
     epochs = len(history.history['loss'])
@@ -138,7 +147,7 @@ def multivariateForecastNBackMForward(
     return [rmse, epochs]
 
 
-def plotNForwardMBackwardsResults(inv_yhat, n_stepsIntoFuture, onlyTargetValuePredictions, onlyTargetValueTestData, _run, _modelNumber, targetFilePath):
+def plotNForwardMBackwardsResults(inv_yhat, n_stepsIntoFuture, onlyTargetValuePredictions, onlyTargetValueTestData, _run, _modelNumber, targetFilePath, _plotLegendItems, _plotDateFormat):
 
     # plot the complete prediction series for the first three days as predicted at midnight from
     # the previous 24 hours
@@ -159,11 +168,29 @@ def plotNForwardMBackwardsResults(inv_yhat, n_stepsIntoFuture, onlyTargetValuePr
     pyplot.figure(targetFilePath + str(_modelNumber) + "forecasts")
 
     # plot all lines as one in one chart
-    pyplot.plot(plottableTestData, label='Originaldaten')
-    pyplot.plot(plottablePredictionData, label='Vorhersagen')
-    pyplot.legend()
-    plt.savefig(targetFilePath + str(_modelNumber) + '_predictions.jpg', bbox_inches='tight', dpi=150)
-    pyplot.show()
+    if type(_plotLegendItems) != bool:
+        # for final outputs
+        pyplot.plot(_plotLegendItems[:len(plottableTestData)].values, plottableTestData, label='Originaldaten')
+        pyplot.plot(_plotLegendItems[:len(plottableTestData)].values, plottablePredictionData, label='Vorhersagen')
+        pyplot.gca().xaxis.set_major_formatter(mdates.DateFormatter(_plotDateFormat))
+        pyplot.legend()
+        plt.savefig(targetFilePath + str(_modelNumber) + '_predictions.jpg', bbox_inches='tight', dpi=150)
+        pyplot.clf()
+
+        # plot first plain forecast
+        threeTimesPredictionSpan = min(n_stepsIntoFuture * 3, len(plottableTestData))
+        pyplot.plot(_plotLegendItems[:threeTimesPredictionSpan].values, plottableTestData[:threeTimesPredictionSpan], label='Originaldaten')
+        pyplot.plot(_plotLegendItems[:threeTimesPredictionSpan].values, plottablePredictionData[:threeTimesPredictionSpan], label='Vorhersagen')
+        pyplot.gca().xaxis.set_major_formatter(mdates.DateFormatter(_plotDateFormat))
+        pyplot.legend()
+        plt.savefig(targetFilePath + str(_modelNumber) + '_predictions_3times.jpg', bbox_inches='tight', dpi=150)
+        pyplot.show()
+    else:
+        pyplot.plot(plottableTestData,  label='Originaldaten')
+        pyplot.plot(plottablePredictionData, label='Vorhersagen')
+        pyplot.legend()
+        plt.savefig(targetFilePath + str(_modelNumber) + '_predictions.jpg', bbox_inches='tight', dpi=150)
+        pyplot.show()
 
 
 def getHourFromTimestamp(datarow):
@@ -191,7 +218,11 @@ def checkModuleParameters(
         _dropout=0.2,
         _modelNumber=0,
         _epochs = 50,
-        _lossFunction="mae"):
+        _lossFunction="mae",
+        _saveWeights=False,
+        _plotLegendItems=False,
+        _plotDateFormat="%d.%m"
+):
 
     rmse = np.array([0.0, 0.0, 0.0])
     epochs = np.array([0.0, 0.0, 0.0])
@@ -213,7 +244,10 @@ def checkModuleParameters(
             _modelNumber,
             _epochs,
             i,
-            _lossFunction
+            _lossFunction,
+            _saveWeights,
+            _plotLegendItems,
+            _plotDateFormat
         )
         rmse[i] = result[0]
         epochs[i] = result[1]

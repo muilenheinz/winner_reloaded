@@ -12,6 +12,7 @@ import re
 import datetime as dt
 import pandas as pd
 from scipy.stats import kendalltau
+from decimal import Decimal
 
 
 # Overview of weatherstations available here:
