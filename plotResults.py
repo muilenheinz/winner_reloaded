@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import matplotlib.gridspec as gridspec
 
-def createReusltChart(sourceFilePath, targetFilePath):
+def createReusltChart(sourceFilePath, targetFilePath, color="b"):
         # load and format data
         data = pd.read_csv(sourceFilePath, delimiter=";")
         data_types_dict = {
@@ -20,22 +20,22 @@ def createReusltChart(sourceFilePath, targetFilePath):
 
         # plot lstm units
         axis = plt.subplot(gs[0, 0])
-        axis.bar(data.loc[0:3, "LSTM Units"], data.loc[0:3, "Durchschnitt"])
+        axis.bar(data.loc[0:3, "LSTM Units"], data.loc[0:3, "Durchschnitt"], color=color)
         axis.set_title("LSTM Units")
 
         # plot batch_size
         axis = plt.subplot(gs[0, 1])
-        axis.bar(data.loc[4:6, "batch_size"], data.loc[4:6, "Durchschnitt"])
+        axis.bar(data.loc[4:6, "batch_size"], data.loc[4:6, "Durchschnitt"], color=color)
         axis.set_title("Batch size")
 
         # plot dropout, overlap with batch_size
         axis = plt.subplot(gs[0, 2])
-        axis.bar(data.loc[6:8, "dropout"], data.loc[6:8, "Durchschnitt"])
+        axis.bar(data.loc[6:8, "dropout"], data.loc[6:8, "Durchschnitt"], color=color)
         axis.set_title("Dropout")
 
         # plot steps into past
         axis = plt.subplot(gs[1, 0])
-        axis.bar(data.loc[15:17, "steps_into_past"], data.loc[15:17, "Durchschnitt"])
+        axis.bar(data.loc[[16,17,18], "steps_into_past"], data.loc[[16,17,18], "Durchschnitt"], color=color)
         axis.set_title("Schritte in die Vergangenheit")
 
 
@@ -59,16 +59,22 @@ def createReusltChart(sourceFilePath, targetFilePath):
                                 lossFunctions.iloc[index] = replaceDict[replaceEntry]
 
         axis = plt.subplot(gs[1, 1:])
-        axis.bar(data.loc[8:14, "lossFunction"], data.loc[8:14, "Durchschnitt"])
+        axis.bar(data.loc[8:14, "lossFunction"], data.loc[8:14, "Durchschnitt"], color=color)
         axis.set_title("Optimierungsfunktionen")
 
         plt.tight_layout
 
         # save the plot as file
-        plt.savefig(targetFilePath + 'resultChart.jpg', bbox_inches='tight', dpi=150)
+        plt.savefig(targetFilePath, bbox_inches='tight', dpi=150)
         plt.show()
 
-sourceFilePath = "../results_remote/aps_regression_60minutes/aps_60min_regressionModels.csv"
-targetFilePath = "../results_remote/aps_regression_60minutes/"
+# sourceFilePath = "../results_remote/aps_regression_60minutes/aps_60min_regressionModels.csv"
+# targetFilePath = "../results_remote/aps_regression_60minutes/"
 
-createReusltChart(sourceFilePath, targetFilePath)
+sourceFilePath = "../results_remote/aps_regression_60minutes/aps_60min_regressionModels.csv"
+targetFilePath = "../results_remote/aps_regression_60minutes/aps_regression_60minutes_results.jpg"
+
+
+
+
+createReusltChart(sourceFilePath, targetFilePath, "red")

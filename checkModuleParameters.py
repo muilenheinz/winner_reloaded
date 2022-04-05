@@ -8,7 +8,7 @@ from modelFunctions import *
 # test all "plausible" values for the given factors
 def determineOptimalParametersForModel(onlyRelevantFactors, _targetFilePath, stepsIntoPast, stepsIntoFuture, predictIndex=0):
     # test number of units
-    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.2, 1, 1000, "mae")
+    checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 100, 128, 0.8, 0.2, 1, 2, "mae")
     checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 256, 128, 0.8, 0.2, 2, 1000, "mae")
     checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 512, 128, 0.8, 0.2, 3, 1000, "mae")
     checkModuleParameters(_targetFilePath, onlyRelevantFactors, stepsIntoFuture, stepsIntoFuture, predictIndex, 1024, 128, 0.8, 0.2, 4, 1000, "mae")

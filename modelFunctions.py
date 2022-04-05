@@ -152,8 +152,8 @@ def plotNForwardMBackwardsResults(inv_yhat, n_stepsIntoFuture, onlyTargetValuePr
     # plot the complete prediction series for the first three days as predicted at midnight from
     # the previous 24 hours
     loop_top = int(inv_yhat.shape[0] / n_stepsIntoFuture)
-    plottableTestData = np.zeros((1))
-    plottablePredictionData = np.zeros((1))
+    plottableTestData = np.zeros((0))
+    plottablePredictionData = np.zeros((0))
     # pyplot.figure(targetFilePath + str(_modelNumber) + "forecasts")
     for i in range(loop_top):
         # plot the forecasts as sepearted values
@@ -171,23 +171,32 @@ def plotNForwardMBackwardsResults(inv_yhat, n_stepsIntoFuture, onlyTargetValuePr
     if type(_plotLegendItems) != bool:
         # for final outputs
         pyplot.plot(_plotLegendItems[:len(plottableTestData)].values, plottableTestData, label='Originaldaten')
-        pyplot.plot(_plotLegendItems[:len(plottableTestData)].values, plottablePredictionData, label='Vorhersagen')
+        pyplot.plot(_plotLegendItems[:len(plottableTestData)].values, plottablePredictionData, label='Vorhersagen', alpha=0.7)
         pyplot.gca().xaxis.set_major_formatter(mdates.DateFormatter(_plotDateFormat))
         pyplot.legend()
         plt.savefig(targetFilePath + str(_modelNumber) + '_predictions.jpg', bbox_inches='tight', dpi=150)
         pyplot.clf()
 
-        # plot first plain forecast
-        threeTimesPredictionSpan = min(n_stepsIntoFuture * 3, len(plottableTestData))
-        pyplot.plot(_plotLegendItems[:threeTimesPredictionSpan].values, plottableTestData[:threeTimesPredictionSpan], label='Originaldaten')
-        pyplot.plot(_plotLegendItems[:threeTimesPredictionSpan].values, plottablePredictionData[:threeTimesPredictionSpan], label='Vorhersagen')
+        # plot first n forecast
+        multiplicationFactor = 3
+        if n_stepsIntoFuture == 4 or n_stepsIntoFuture == 60:
+            multiplicationFactor = 24
+        threeTimesPredictionSpan = min(n_stepsIntoFuture * multiplicationFactor, len(plottableTestData))
+
+        beginIndex = 0
+        if n_stepsIntoFuture == 60:
+            beginIndex = 60 * 14
+            threeTimesPredictionSpan += beginIndex - 2 * 60
+
+        pyplot.plot(_plotLegendItems[beginIndex:threeTimesPredictionSpan].values, plottableTestData[beginIndex:threeTimesPredictionSpan], label='Originaldaten')
+        pyplot.plot(_plotLegendItems[beginIndex:threeTimesPredictionSpan].values, plottablePredictionData[beginIndex:threeTimesPredictionSpan], label='Vorhersagen', alpha=0.7)
         pyplot.gca().xaxis.set_major_formatter(mdates.DateFormatter(_plotDateFormat))
         pyplot.legend()
         plt.savefig(targetFilePath + str(_modelNumber) + '_predictions_3times.jpg', bbox_inches='tight', dpi=150)
         pyplot.show()
     else:
         pyplot.plot(plottableTestData,  label='Originaldaten')
-        pyplot.plot(plottablePredictionData, label='Vorhersagen')
+        pyplot.plot(plottablePredictionData, label='Vorhersagen', alpha=0.7)
         pyplot.legend()
         plt.savefig(targetFilePath + str(_modelNumber) + '_predictions.jpg', bbox_inches='tight', dpi=150)
         pyplot.show()

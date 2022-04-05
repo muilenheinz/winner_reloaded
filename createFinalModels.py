@@ -17,33 +17,54 @@ def calcModelsForAlfonsPechStrasse():
     apsData = prepareAlfonsPechStrasseData()
     apsData = apsData.astype("float")
     apsData = apsData.apply(getHourFromTimestamp, axis=1)
+    apsData["Zeitstempel"] = apsData["Zeitstempel"] / 1000
+
+    # get forecast timestamps plain (for 60 minute model)
+    n_train_hours = round(apsData.shape[0] * 0.8)
+    timestamps = apsData.agg({"Zeitstempel": [convertTimestampToDate]})[n_train_hours:]
+
+    # get data for 24 hours model
+    groupedData24Hours = apsData.groupby(['Wochennummer', 'Tag der Woche', 'Stunde']).sum()
+    countGroupMembers = apsData.groupby(['Wochennummer', 'Tag der Woche', 'Stunde']).count()
+    groupedData24Hours = groupedData24Hours.divide(countGroupMembers, axis=0)
+    groupedData24Hours = groupedData24Hours.sort_values(by="Zeitstempel")
+
+    # get timestamps for 24 hours model forecasts
+    n_train_hours = round(groupedData24Hours.shape[0] * 0.8)
+    timestamps24Hours = groupedData24Hours.agg({"Zeitstempel": [convertTimestampToDate]})[n_train_hours:]
+
+    # get 7 days data
+    groupedData7Days = apsData.groupby(['Wochennummer', 'Tag der Woche']).sum()
+    countGroupMembers = apsData.groupby(['Wochennummer', 'Tag der Woche']).count()["Stunde"]
+    groupedData7Days= groupedData7Days.divide(countGroupMembers, axis=0)  # calc average timestamp
+    groupedData7Days = groupedData7Days.sort_values(by="Zeitstempel")
+
+    # get timestamps for 7 days model forecasts
+    n_train_hours = round(groupedData7Days.shape[0] * 0.8)
+    timestamps7Days = groupedData7Days.agg({"Zeitstempel": [convertTimestampToDate]})[n_train_hours:]
+
+    baseURL = "../results/finalModels/"
 
     # 60 minute forecast
     onlyRelevantFactors = filterDataBasedOnKendallRanks(apsData, "Messwert", 0.3)
-    url = "../results/finalModels/aps_60min"
-    multivariateForecastNBackMForward(
-        url, onlyRelevantFactors,
-        60, 60, 0, 100, 128, 0.8, 0.2, 0, runs, 0, "mae", url + "_weights"
+    checkModuleParameters(
+        baseURL + "aps_60min", onlyRelevantFactors, 60, 60, 0, 100, 128, 0.8, 0.2, 0, 3, "mae",
+        baseURL + "aps_60min_weights", timestamps, "%d.%m \n %H:%M"
     )
 
-    # # 24 hours forecast
-    groupedData = apsData.groupby(['Wochennummer', 'Tag der Woche', 'Stunde']).sum()
-    groupedData = groupedData / 60
-    onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Messwert", 0.3)
-    url = "../results/finalModels/aps_24h"
-    multivariateForecastNBackMForward(
-        url, onlyRelevantFactors,
-        24, 24, 0, 100, 128, 0.8, 0.2, 0, runs, 0, huber_loss, url + "_weights"
+    # 24 hours forecast
+    onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData24Hours, "Messwert", 0.3)
+    checkModuleParameters(
+        baseURL + "aps_24h", onlyRelevantFactors, 24, 24, 0, 100, 128, 0.8, 0.2, 1, 3, huber_loss,
+        baseURL + "aps_24h_weights", timestamps24Hours, "%d.%m \n %H:%M"
     )
 
     # 7 days forecast
-    groupedData = apsData.groupby(['Wochennummer', 'Tag der Woche']).sum()
-    groupedData = groupedData / 1440
-    onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Messwert", 0.3)
-    url = "../results/finalModels/aps_7d"
-    multivariateForecastNBackMForward(
-        url, onlyRelevantFactors,
-        7, 7, 0, 100, 128, 0.8, 0.2, 0, runs, 0, "mse", url + "_weights"
+    onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData7Days, "Messwert", 0.3)
+    # use 67% as train data to have at least one prediction to visualize
+    checkModuleParameters(
+        baseURL + "aps_7d", onlyRelevantFactors, 7, 7, 0, 100, 128, 0.67, 0.2, 2, 3, "mse",
+        baseURL + "aps_7d_weights", timestamps7Days, "%a \n %d.%m"
     )
 
 def convertTimestampToDate(input):
@@ -65,7 +86,7 @@ def calcModelsForTanzendeSiedlung():
     # get forecast data 24 hours
     groupedData24Hours = tasData.groupby(['Wochennummer', 'Tag der Woche', 'Stunde']).sum()
     countGroupMembers = tasData.groupby(['Wochennummer', 'Tag der Woche', 'Stunde']).count()["Zeitstempel"]
-    groupedData24Hours = groupedData24Hours.divide(countGroupMembers, axis=0)
+    groupedData24Hours["Zeitstempel"] = groupedData24Hours["Zeitstempel"].divide(countGroupMembers, axis=0)
     groupedData24Hours = groupedData24Hours.sort_values(by="Zeitstempel")
 
     # get timestamp vales for the output chart scale for 24 hours data
@@ -82,52 +103,51 @@ def calcModelsForTanzendeSiedlung():
     # get timestamp vales for the output chart scale for 7 days data
     n_train_hours = round(groupedData7Days.shape[0] * 0.8)
     timestamps7Days = groupedData7Days.agg({"Zeitstempel": [convertTimestampToDate]})[n_train_hours:]
-    # timestamps7Days = groupedData7Days["Zeitstempel"][n_train_hours:]
 
     baseURL = "../results/finalModels/"
 
     # forecast 60 min feedIn
     onlyRelevantFactors = filterDataBasedOnKendallRanks(tasData, "Netzeinspeisung", 0.3)
     checkModuleParameters(
-        baseURL + "tas_60min_feedIn", onlyRelevantFactors, 4, 4, 1, 100, 128, 0.8, 0.2, 0, 3, "mae",
+        baseURL + "tas_60min_feedIn", onlyRelevantFactors, 4, 4, 1, 100, 128, 0.8, 0.2, 0, 1000, "mae",
         baseURL + "tas_60min_feedIn_weights", timestamps, "%d.%m \n %H:%M"
     )
 
     # forecast 24 hour feedIn
     onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData24Hours, "Netzeinspeisung", 0.3)
     checkModuleParameters(
-        baseURL + "tas_24h_feedin", onlyRelevantFactors, 24, 24, 1, 100, 128, 0.8, 0.2, 1, 3, "mae",
-        baseURL + "tas_24h_feedin_weights", timestamps, "%d.%m \n %H:%M"
+        baseURL + "tas_24h_feedin", onlyRelevantFactors, 24, 24, 1, 100, 128, 0.8, 0.2, 1, 1000, meanAbsolutePercentageError,
+        baseURL + "tas_24h_feedin_weights", timestamps24Hours, "%d.%m \n %H:%M"
     )
 
     # forecast 7 days feedIn
     onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData7Days, "Netzeinspeisung", 0.3)
     checkModuleParameters(
-        baseURL + "tas_7d_feedin", onlyRelevantFactors, 7, 7, 1, 100, 128, 0.8, 0.2, 1, 3, cosine_similarity,
-        baseURL + "tas_7d_feedin_weights", timestamps, "%d.%m"
+        baseURL + "tas_7d_feedin", onlyRelevantFactors, 7, 7, 1, 1024, 128, 0.8, 0, 1, 1000, cosine_similarity,
+        baseURL + "tas_7d_feedin_weights", timestamps7Days, "%a \n %d.%m"
     )
 
     # forecast 60 minute usage
     onlyRelevantFactors = filterDataBasedOnKendallRanks(tasData, "Gesamtverbrauch", 0.3)
     checkModuleParameters(
-        baseURL + "tas_60min_usage", onlyRelevantFactors, 60, 60, 7, 100, 128, 0.8, 0.2, 1, 3, meanSquaredLogarithmicError,
+        baseURL + "tas_60min_usage", onlyRelevantFactors, 4, 4, 7, 100, 128, 0.8, 0.1, 1, 1000, meanSquaredLogarithmicError,
         baseURL + "tas_60min_usage_weights", timestamps, "%d.%m \n %H:%M"
     )
 
     # forecast 24 hour usage
     onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData24Hours, "Gesamtverbrauch", 0.3)
     checkModuleParameters(
-        baseURL + "tas_24h_usage", onlyRelevantFactors, 24, 24, 7, 100, 128, 0.8, 0.2, 1, 3, meanAbsolutePercentageError,
-        baseURL + "tas_24h_usage_weights", timestamps, "%d.%m \n %H:%M"
+        baseURL + "tas_24h_usage", onlyRelevantFactors, 24, 24, 7, 100, 128, 0.8, 0.2, 1, 1000, huber_loss,
+        baseURL + "tas_24h_usage_weights", timestamps24Hours, "%d.%m \n %H:%M"
     )
 
     # forecast 7 days usage
     onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData7Days, "Gesamtverbrauch", 0.3)
     checkModuleParameters(
-        baseURL + "tas_7d_usage", onlyRelevantFactors, 7, 7, 7, 100, 128, 0.8, 0.2, 1, 3, logCosh,
-        baseURL + "tas_7d_usage_weights", timestamps, "%d.%m \n %H:%M"
+        baseURL + "tas_7d_usage", onlyRelevantFactors, 14, 7, 7, 100, 128, 0.8, 0.2, 1, 1000, logCosh,
+        baseURL + "tas_7d_usage_weights", timestamps7Days, "%a \n %d.%m"
     )
 
 
-# calcModelsForAlfonsPechStrasse()
+calcModelsForAlfonsPechStrasse()
 calcModelsForTanzendeSiedlung()
