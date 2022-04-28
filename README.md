@@ -41,10 +41,18 @@ The first three digits indicate whether to calc the models for aps:
 2. 24hours 
 3. 7days model 
 
-The last 6 digits indicate whether to try the params for tanzende Siedlung: 
-4. 60min FeedIn
-5. 24hours FeedIn
-6. 7days FeedIn
-7. 60min Usage
-8. 24hours Usage
-9. 7days Usage
+The last 6 digits indicate whether to try the params for tanzende Siedlung:
+4. 60-min FeedIn
+5. 24-hours FeedIn
+6. 7-days FeedIn
+7. 60-min Usage
+8. 24-hours Usage
+9. 7-days Usage
+
+## createFinalModels.py 
+
+Calculates the models derived from the parameters determined in the script checkModuleParameters.py. Weights of the models, the plots for val_loss and loss functions and the plotted predictions are then stored in the folder results/finalModels
+
+##  plotResults.py
+
+Plots the results of the Parameter check as barcharts by comparing the RMSEs of the tests for the single parameters.
