@@ -71,10 +71,10 @@ def createReusltChart(sourceFilePath, targetFilePath, color="b"):
 # sourceFilePath = "../results_remote/aps_regression_60minutes/aps_60min_regressionModels.csv"
 # targetFilePath = "../results_remote/aps_regression_60minutes/"
 
-sourceFilePath = "../results_remote/aps_regression_60minutes/aps_60min_regressionModels.csv"
-targetFilePath = "../results_remote/aps_regression_60minutes/aps_regression_60minutes_results.jpg"
+sourceFilePath = "../results_remote/ts_regression_feedin_60minutes/ts_feedIn_60min_regressionModels.csv"
+targetFilePath = "../results_remote/ts_regression_feedin_60minutes/ts_feedIn_60min_regressionModels_results.jpg"
 
 
 
 
-createReusltChart(sourceFilePath, targetFilePath, "red")
+createReusltChart(sourceFilePath, targetFilePath, None)
