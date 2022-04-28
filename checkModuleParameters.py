@@ -87,14 +87,12 @@ def determineOptimalParametersForTanzendeSiedlung(
     if _calc24hoursFeedIn:
         data = data.apply(getHourFromTimestamp, axis=1)
         groupedData = data.groupby(['Wochennummer', 'Tag der Woche', 'Stunde']).sum()
-        groupedData = groupedData / 4
         onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Netzeinspeisung", 0.3)
         determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_feedin_24hours/ts_feedIn_24h_", [24, 48, 72], 24, 1)
 
     # forecast for complete days
     if _calc7daysFeedIn:
         groupedData = data.groupby(['Wochennummer', 'Tag der Woche']).sum()
-        groupedData = groupedData / 96
         onlyRelevantFactors = filterDataBasedOnKendallRanks(groupedData, "Netzeinspeisung", 0.3)
         determineOptimalParametersForModel(onlyRelevantFactors, "../results/ts_regression_feedin_7days/ts_feedIn_7days_", [7, 14, 21], 7, 1)
 
