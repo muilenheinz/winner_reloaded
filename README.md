@@ -1,5 +1,7 @@
 # winner_reloaded
 
+Scripts to predict solar-energy-production and usage for houses in the winner & winner reloaded projects. For further information see Ausarbeitung.pdf  
+
 ## prepareData.py
 load data from csv files and add information on candidate values like the weather or holidays to them
 
